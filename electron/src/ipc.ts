@@ -1,13 +1,10 @@
 import { BrowserWindow } from "electron"
-import { FirebaseCredential } from "./FirebaseCredential"
 
 export type IpcEvent =
   | { name: "onNewFile" }
   | { name: "onClickOpenFile" }
   | { name: "onSaveFile" }
   | { name: "onSaveFileAs" }
-  | { name: "onRename" }
-  | { name: "onImport" }
   | { name: "onExportWav" }
   | { name: "onExportMp3" }
   | { name: "onUndo" }
@@ -28,10 +25,6 @@ export type IpcEvent =
   | { name: "onOpenSetting" }
   | { name: "onOpenHelp" }
   | { name: "onOpenFile"; params: { filePath: string } }
-  | {
-      name: "onBrowserSignInCompleted"
-      params: { credential: FirebaseCredential }
-    }
 
 export type ParamsForEvent<T extends IpcEvent["name"]> =
   Extract<IpcEvent, { name: T }> extends { params: infer P } ? P : undefined

@@ -32,9 +32,6 @@ export const useSong = () => {
     get fileHandle() {
       return useMobxGetter(song, "fileHandle")
     },
-    get cloudSongId() {
-      return useMobxGetter(song, "cloudSongId")
-    },
     get endOfSong() {
       return useMobxGetter(song, "endOfSong")
     },

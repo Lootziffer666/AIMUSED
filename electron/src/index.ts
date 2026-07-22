@@ -38,16 +38,13 @@ let openFilePath: string | null = null
 
 const ipc = new Ipc()
 
-function updateMainMenu(isLoggedIn: boolean) {
+function updateMainMenu() {
   mainMenu = Menu.buildFromTemplate(
     menuTemplate({
-      isLoggedIn,
       onClickNew: () => ipc.send("onNewFile"),
       onClickOpen: async () => ipc.send("onClickOpenFile"),
       onClickSave: () => ipc.send("onSaveFile"),
       onClickSaveAs: () => ipc.send("onSaveFileAs"),
-      onClickRename: () => ipc.send("onRename"),
-      onClickImport: () => ipc.send("onImport"),
       onClickExportWav: () => ipc.send("onExportWav"),
       onClickExportMp3: () => ipc.send("onExportMp3"),
       onClickUndo: () => ipc.send("onUndo"),
@@ -83,16 +80,8 @@ registerIpcMain({
       openFilePath = null
     }
   },
-  onAuthStateChanged(isLoggedIn) {
-    updateMainMenu(isLoggedIn)
-  },
   onMainWindowClose() {
     mainWindow.destroy()
-  },
-  onAuthCallback(credential) {
-    log.info("electron:event:open-url", "ID Token is received")
-    mainWindow.focus()
-    ipc.send("onBrowserSignInCompleted", { credential })
   },
 })
 
@@ -133,7 +122,7 @@ const createWindow = (): void => {
 
   ipc.mainWindow = mainWindow
 
-  updateMainMenu(false)
+  updateMainMenu()
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith("http")) {

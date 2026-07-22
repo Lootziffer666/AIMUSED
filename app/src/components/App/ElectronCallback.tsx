@@ -1,6 +1,5 @@
 import { FC, useEffect, useState } from "react"
 import { ElectronAPI } from "../../../../electron/src/ElectronAPI"
-import { FirebaseCredential } from "../../../../electron/src/FirebaseCredential"
 
 declare global {
   interface Window {
@@ -14,8 +13,6 @@ export interface ElectronCallbackProps {
   onOpenFile: (param: { filePath: string }) => void
   onSaveFile: () => void
   onSaveFileAs: () => void
-  onRename: () => void
-  onImport: () => void
   onExportWav: () => void
   onExportMp3: () => void
   onUndo: () => void
@@ -35,7 +32,6 @@ export interface ElectronCallbackProps {
   onVelocity: () => void
   onOpenSetting: () => void
   onOpenHelp: () => void
-  onBrowserSignInCompleted: (param: { credential: FirebaseCredential }) => void
 }
 
 export const ElectronCallback: FC<ElectronCallbackProps> = ({
@@ -44,8 +40,6 @@ export const ElectronCallback: FC<ElectronCallbackProps> = ({
   onOpenFile,
   onSaveFile,
   onSaveFileAs,
-  onRename,
-  onImport,
   onExportWav,
   onExportMp3,
   onUndo,
@@ -65,7 +59,6 @@ export const ElectronCallback: FC<ElectronCallbackProps> = ({
   onVelocity,
   onOpenSetting,
   onOpenHelp,
-  onBrowserSignInCompleted,
 }) => {
   const [isInitialized, setIsInitialized] = useState(false)
 
@@ -77,8 +70,6 @@ export const ElectronCallback: FC<ElectronCallbackProps> = ({
   useEffect(() => window.electronAPI.onOpenFile(onOpenFile), [onOpenFile])
   useEffect(() => window.electronAPI.onSaveFile(onSaveFile), [onSaveFile])
   useEffect(() => window.electronAPI.onSaveFileAs(onSaveFileAs), [onSaveFileAs])
-  useEffect(() => window.electronAPI.onRename(onRename), [onRename])
-  useEffect(() => window.electronAPI.onImport(onImport), [onImport])
   useEffect(() => window.electronAPI.onExportWav(onExportWav), [onExportWav])
   useEffect(() => window.electronAPI.onExportMp3(onExportMp3), [onExportMp3])
   useEffect(() => window.electronAPI.onUndo(onUndo), [onUndo])
@@ -113,10 +104,6 @@ export const ElectronCallback: FC<ElectronCallbackProps> = ({
     [onOpenSetting],
   )
   useEffect(() => window.electronAPI.onOpenHelp(onOpenHelp), [onOpenHelp])
-  useEffect(
-    () => window.electronAPI.onBrowserSignInCompleted(onBrowserSignInCompleted),
-    [onBrowserSignInCompleted],
-  )
 
   useEffect(() => {
     if (!isInitialized) {
