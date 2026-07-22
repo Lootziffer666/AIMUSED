@@ -128,11 +128,6 @@ export const GlobalCSS = () => {
         &::-webkit-scrollbar-thumb:hover {
           background-color: ${theme.tertiaryTextColor};
         }
-
-        /* firebase */
-        .firebase-emulator-warning {
-          display: none !important;
-        }
       `}
     />
   )

@@ -7,7 +7,6 @@ import { useGlobalKeyboardShortcut } from "../../hooks/useGlobalKeyboardShortcut
 import { useRouter } from "../../hooks/useRouter"
 import { ArrangeEditor } from "../ArrangeView/ArrangeEditor"
 import { BuildInfo } from "../BuildInfo"
-import { CloudFileDialog } from "../CloudFileDialog/CloudFileDialog"
 import { ControlSettingDialog } from "../ControlSettingDialog/ControlSettingDialog"
 import { ExportProgressDialog } from "../ExportDialog/ExportProgressDialog"
 import { Head } from "../Head/Head"
@@ -16,13 +15,9 @@ import { Navigation } from "../Navigation/Navigation"
 import { OnBeforeUnload } from "../OnBeforeUnload/OnBeforeUnload"
 import { OnInit } from "../OnInit/OnInit"
 import { PianoRollEditor } from "../PianoRoll/PianoRollEditor"
-import { PublishDialog } from "../PublishDialog/PublishDialog"
 import { SettingDialog } from "../SettingDialog/SettingDialog"
-import { SignInDialog } from "../SignInDialog/SignInDialog"
 import { TempoEditor } from "../TempoGraph/TempoEditor"
 import { TransportPanel } from "../TransportPanel/TransportPanel"
-import { DeleteAccountDialog } from "../UserSettingsDialog/DeleteAccountDialog"
-import { UserSettingsDialog } from "../UserSettingsDialog/UserSettingsDialog"
 import { DropZone } from "./DropZone"
 
 const Container = styled.div`
@@ -73,15 +68,10 @@ export const RootView: FC = () => {
       <HelpDialog />
       <ExportProgressDialog />
       <Head />
-      <SignInDialog />
-      <CloudFileDialog />
       <SettingDialog />
       <ControlSettingDialog />
       <OnInit />
       <OnBeforeUnload />
-      <PublishDialog />
-      <UserSettingsDialog />
-      <DeleteAccountDialog />
     </>
   )
 }

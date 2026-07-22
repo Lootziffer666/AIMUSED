@@ -31,8 +31,6 @@ const api: ElectronAPI = {
   onOpenFile: register("onOpenFile"),
   onSaveFile: register("onSaveFile"),
   onSaveFileAs: register("onSaveFileAs"),
-  onRename: register("onRename"),
-  onImport: register("onImport"),
   onExportWav: register("onExportWav"),
   onExportMp3: register("onExportMp3"),
   onUndo: register("onUndo"),
@@ -52,7 +50,6 @@ const api: ElectronAPI = {
   onVelocity: register("onVelocity"),
   onOpenSetting: register("onOpenSetting"),
   onOpenHelp: register("onOpenHelp"),
-  onBrowserSignInCompleted: register("onBrowserSignInCompleted"),
   // tell to main process that the renderer process is ready
   ready: invoke("ready"),
   showMessageBox: invoke("showMessageBox"),
@@ -64,8 +61,6 @@ const api: ElectronAPI = {
   searchSoundFonts: invoke("searchSoundFonts"),
   addRecentDocument: invoke("addRecentDocument"),
   getArgument: invoke("getArgument"),
-  openAuthWindow: invoke("openAuthWindow"),
-  authStateChanged: invoke("authStateChanged"),
   closeMainWindow: invoke("closeMainWindow"),
 }
 

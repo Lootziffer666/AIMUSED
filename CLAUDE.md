@@ -64,21 +64,15 @@ Signal is a web-based music sequencer built with React and TypeScript, with cros
 
 **Packages (`/packages`)**
 
+- `@signal-app/core` - Core sequencer entities and song/track/event model
 - `@signal-app/player` - Audio playback engine with SoundFont synthesis
-- `@signal-app/api` - Firebase/Cloud integration for song storage
-- `@signal-app/community` - Community features and song sharing
 - `dialog-hooks` - React hooks for modal dialogs
-- `firebaseui-web-react` - Firebase authentication components
 
 **Electron Application (`/electron`)**
 
 - Cross-platform desktop wrapper
 - File system access for local MIDI files
 - Native OS integration (menus, file associations)
-
-**Static Site (`/static`)**
-
-- Marketing/landing page built with Next.js
 
 ### Data Architecture
 
@@ -102,7 +96,7 @@ Signal is a web-based music sequencer built with React and TypeScript, with cros
 - **Graphics:** WebGL for performance-critical rendering
 - **Build:** Vite, Turbo (monorepo), ESLint, Prettier
 - **Desktop:** Electron with Forge
-- **Cloud:** Firebase (auth, storage), Vercel (hosting)
+- **Storage:** Local-first — File System Access API / native file system (Electron), no cloud accounts
 
 ### File Organization
 

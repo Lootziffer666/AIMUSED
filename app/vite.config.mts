@@ -1,12 +1,10 @@
 import react from "@vitejs/plugin-react"
 import path from "path"
-import { defineConfig, loadEnv } from "vite"
+import { defineConfig } from "vite"
 import checker from "vite-plugin-checker"
 import svgr from "vite-plugin-svgr"
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, path.join(process.cwd(), ".."), "FIREBASE_")
-
+export default defineConfig(() => {
   return {
     plugins: [
       checker({
@@ -20,33 +18,11 @@ export default defineConfig(({ mode }) => {
           exportType: "default",
         },
       }),
-      {
-        name: "rewrite-path",
-        configureServer(server) {
-          server.middlewares.use((req, _res, next) => {
-            if (req.url === "/home") {
-              req.url = "/community"
-            }
-            if (req.url === "/profile") {
-              req.url = "/community"
-            }
-            if (req.url?.startsWith("/users/")) {
-              req.url = "/community"
-            }
-            if (req.url?.startsWith("/songs/")) {
-              req.url = "/community"
-            }
-            next()
-          })
-        },
-      },
     ],
     build: {
       rollupOptions: {
         input: {
           main: path.resolve(__dirname, "edit.html"),
-          auth: path.resolve(__dirname, "auth.html"),
-          community: path.resolve(__dirname, "community.html"),
         },
       },
       minify: false,
@@ -61,22 +37,8 @@ export default defineConfig(({ mode }) => {
       alias: {
         react: path.resolve("../node_modules/react"),
       },
-      dedupe: [
-        "react",
-        "react-dom",
-        "firebase",
-        "firebase/app",
-        "firebase/auth",
-        "firebase/firestore",
-        "firebase/functions",
-      ],
+      dedupe: ["react", "react-dom"],
     },
     envDir: "..",
-    define: {
-      "process.env": env,
-    },
-    optimizeDeps: {
-      include: ["firebase/app", "firebase/firestore"],
-    },
   }
 })

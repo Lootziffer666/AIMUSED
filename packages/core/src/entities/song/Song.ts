@@ -27,8 +27,6 @@ export class Song {
   timebase: number = DEFAULT_TIME_BASE
   name: string = ""
   fileHandle: FileSystemFileHandle | null = null
-  cloudSongId: string | null = null
-  cloudSongDataId: string | null = null
   isSaved = true
 
   private lastTrackId = 0
