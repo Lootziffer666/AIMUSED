@@ -46,6 +46,8 @@
     "@sentry/browser": "^10.39.0",
     "@sentry/react": "^10.39.0",
     "@signal-app/core": "*",
+    "@signal-app/midi-project": "*",
+    "@signal-app/orchestration-core": "*",
     "@signal-app/player": "*",
     "color": "^5.0.3",
     "dialog-hooks": "*",

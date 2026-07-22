@@ -14,6 +14,7 @@ import { HelpDialog } from "../Help/HelpDialog"
 import { Navigation } from "../Navigation/Navigation"
 import { OnBeforeUnload } from "../OnBeforeUnload/OnBeforeUnload"
 import { OnInit } from "../OnInit/OnInit"
+import { OrchestrationDialog } from "../OrchestrationDialog/OrchestrationDialog"
 import { PianoRollEditor } from "../PianoRoll/PianoRollEditor"
 import { SettingDialog } from "../SettingDialog/SettingDialog"
 import { TempoEditor } from "../TempoGraph/TempoEditor"
@@ -70,6 +71,7 @@ export const RootView: FC = () => {
       <Head />
       <SettingDialog />
       <ControlSettingDialog />
+      <OrchestrationDialog />
       <OnInit />
       <OnBeforeUnload />
     </>

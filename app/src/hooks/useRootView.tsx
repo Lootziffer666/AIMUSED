@@ -11,6 +11,9 @@ export function useRootView() {
     get openControlSettingDialog() {
       return useAtomValue(openControlSettingDialogAtom)
     },
+    get openOrchestrationDialog() {
+      return useAtomValue(openOrchestrationDialogAtom)
+    },
     get initializeError() {
       return useAtomValue(initializeErrorAtom)
     },
@@ -20,6 +23,7 @@ export function useRootView() {
     setOpenHelpDialog: useSetAtom(openHelpAtom),
     setOpenSettingDialog: useSetAtom(openSettingDialogAtom),
     setOpenControlSettingDialog: useSetAtom(openControlSettingDialogAtom),
+    setOpenOrchestrationDialog: useSetAtom(openOrchestrationDialogAtom),
     setInitializeError: useSetAtom(initializeErrorAtom),
     setOpenInitializeErrorDialog: useSetAtom(openInitializeErrorDialogAtom),
   }
@@ -29,5 +33,6 @@ export function useRootView() {
 const openHelpAtom = atom<boolean>(false)
 const openSettingDialogAtom = atom<boolean>(false)
 const openControlSettingDialogAtom = atom<boolean>(false)
+const openOrchestrationDialogAtom = atom<boolean>(false)
 const initializeErrorAtom = atom<Error | null>(null)
 const openInitializeErrorDialogAtom = atom<boolean>(false)

@@ -12,6 +12,7 @@ import {
 } from "../../actions"
 import { useHistory } from "../../hooks/useHistory"
 import { usePianoRoll } from "../../hooks/usePianoRoll"
+import { useRootView } from "../../hooks/useRootView"
 import { envString } from "../../localize/envString"
 import { Localized } from "../../localize/useLocalization"
 import { MenuHotKey as HotKey, Menu, MenuDivider, MenuItem } from "../ui/Menu"
@@ -24,6 +25,7 @@ export const EditMenu: FC<EditMenuProps> = ({ trigger }) => {
   const { selectedNoteIds, setOpenTransposeDialog, setOpenVelocityDialog } =
     usePianoRoll()
   const { hasUndo, hasRedo, undo, redo } = useHistory()
+  const { setOpenOrchestrationDialog } = useRootView()
   const copySelection = useCopySelection()
   const pasteSelection = usePasteSelection()
   const deleteSelection = useDeleteSelection()
@@ -112,6 +114,11 @@ export const EditMenu: FC<EditMenuProps> = ({ trigger }) => {
     close()
     setOpenVelocityDialog(true)
   }, [close, setOpenVelocityDialog])
+
+  const onClickOrchestration = useCallback(() => {
+    close()
+    setOpenOrchestrationDialog(true)
+  }, [close, setOpenOrchestrationDialog])
 
   return (
     <Menu open={isOpen} onOpenChange={setOpen} trigger={trigger}>
@@ -204,6 +211,12 @@ export const EditMenu: FC<EditMenuProps> = ({ trigger }) => {
 
       <MenuItem onClick={onClickVelocity} disabled={!anySelectedNotes}>
         <Localized name="velocity" />
+      </MenuItem>
+
+      <MenuDivider />
+
+      <MenuItem onClick={onClickOrchestration}>
+        <Localized name="open-orchestration" />
       </MenuItem>
     </Menu>
   )

@@ -1,0 +1,28 @@
+{
+  "name": "@signal-app/orchestration-core",
+  "version": "0.1.0",
+  "description": "Deterministic music analysis and orchestration engine ported from MUSE",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "lint": "prettier --check src",
+    "format": "prettier --write src"
+  },
+  "exports": {
+    ".": {
+      "default": "./src/index.ts",
+      "types": "./src/index.ts"
+    },
+    "./shared": {
+      "default": "./src/shared.ts",
+      "types": "./src/shared.ts"
+    }
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "uuid": "^14.0.1"
+  }
+}
