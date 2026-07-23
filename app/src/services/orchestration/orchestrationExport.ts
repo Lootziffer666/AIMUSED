@@ -15,6 +15,15 @@ export interface AppliedOrchestrationTrack {
   trackId: TrackId
   groupId: string
   groupName: string
+  /**
+   * The `MuseInstrumentAssignment.id` (see `@signal-app/orchestration-core`'s
+   * `MuseExportTrackInput.assignmentId`) this track's notes were built from —
+   * lets `orchestrationOrigin.ts`'s `findTrackOrchestrationOrigin` look back
+   * up the `MuseDecision` behind the track's instrument assignment for the
+   * origin badge on `InstrumentMark`. Optional so existing call sites/tests
+   * that only care about mix/stem export grouping don't need to supply it.
+   */
+  assignmentId?: string
 }
 
 export interface OrchestrationTrackGroup {

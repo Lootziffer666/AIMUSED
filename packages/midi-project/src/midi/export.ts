@@ -33,6 +33,13 @@ export interface MuseExportTrackInput {
    */
   groupId?: string;
   groupName?: string;
+  /**
+   * The `MuseInstrumentAssignment.id` this track was built from. Same
+   * optionality rationale as `groupId`/`groupName` above: not used by
+   * `buildMidiFromTracks` itself, mirrored only for shape-compatibility with
+   * `@signal-app/orchestration-core`'s `MuseExportTrackInput`.
+   */
+  assignmentId?: string;
 }
 
 interface AbsoluteEvent {

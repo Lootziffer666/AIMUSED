@@ -11,6 +11,7 @@ import {
   type MuseMidiProject,
 } from "@signal-app/midi-project"
 import { makeObservable, observable, reaction } from "mobx"
+import type { AppliedOrchestrationTrack } from "../services/orchestration/orchestrationExport"
 import type { MuseTrackMapping } from "../services/orchestration/songAdapter"
 
 const MAX_HISTORY = 50
@@ -46,6 +47,17 @@ export class OrchestrationStore {
   private past: MuseMidiProject[] = []
   private future: MuseMidiProject[] = []
   commandLog: readonly MuseCommandLogEntry[] = []
+  /**
+   * Tracks (with their instrument-family group and originating
+   * `MuseInstrumentAssignment` id) created by the most recent "apply to
+   * song" action — see `OrchestrationDialog.tsx`'s `onApplyToSong`. Lives
+   * here (rather than as dialog-local `useState`, which is what the first
+   * cut of the mix/stem export feature used) so it survives the dialog
+   * closing/unmounting: `InstrumentMark`'s origin badge
+   * (`useTrackOrchestrationOrigin`) needs to look this up from the piano
+   * roll regardless of whether the orchestration dialog is open.
+   */
+  appliedTracks: readonly AppliedOrchestrationTrack[] = []
 
   /**
    * Resolves once the most recently triggered IndexedDB autosave (see the
@@ -61,6 +73,7 @@ export class OrchestrationStore {
       past: observable.ref,
       future: observable.ref,
       commandLog: observable.ref,
+      appliedTracks: observable.ref,
     })
 
     // Autosaves the current project to IndexedDB (via the ported
@@ -140,6 +153,17 @@ export class OrchestrationStore {
       { id: createId("cmdlog"), command, appliedAt: new Date().toISOString() },
     ].slice(-MAX_HISTORY)
     this.project = nextProject
+  }
+
+  /**
+   * Records which `Song` tracks the most recent "apply to song" action
+   * created — called from `OrchestrationDialog.tsx`'s `onApplyToSong` right
+   * after `applyRenderResultToSong`. Replaces the previous list outright
+   * (only the latest "apply" action is tracked, matching the export
+   * feature's existing "scope for export mix/stems" semantics).
+   */
+  recordAppliedTracks(tracks: readonly AppliedOrchestrationTrack[]) {
+    this.appliedTracks = [...tracks]
   }
 
   undo() {

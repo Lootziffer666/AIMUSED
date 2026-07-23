@@ -12,7 +12,6 @@ import { useOrchestrationExport } from "../../hooks/useOrchestrationExport"
 import { useRootView } from "../../hooks/useRootView"
 import { useStores } from "../../hooks/useStores"
 import { Localized, useLocalization } from "../../localize/useLocalization"
-import { AppliedOrchestrationTrack } from "../../services/orchestration/orchestrationExport"
 import {
   applyRenderResultToSong,
   songToMuseProject,
@@ -125,8 +124,17 @@ export const OrchestrationDialog: FC = () => {
   const { openOrchestrationDialog: open, setOpenOrchestrationDialog } =
     useRootView()
   const { songStore, orchestrationStore } = useStores()
-  const { project, analysis, arrangement, canUndo, canRedo, undo, redo } =
-    useOrchestration()
+  const {
+    project,
+    analysis,
+    arrangement,
+    canUndo,
+    canRedo,
+    undo,
+    redo,
+    appliedTracks,
+    recordAppliedTracks,
+  } = useOrchestration()
   const { exportOrchestrationMix, exportOrchestrationStems } =
     useOrchestrationExport()
   const localized = useLocalization()
@@ -136,11 +144,6 @@ export const OrchestrationDialog: FC = () => {
     MUSE_RECIPE_CATALOG[0].id,
   )
   const [isBusy, setIsBusy] = useState(false)
-  // Tracks (with their instrument-family group) created by the most recent
-  // "apply to song" action — the scope for "export mix"/"export stems".
-  const [appliedTracks, setAppliedTracks] = useState<
-    AppliedOrchestrationTrack[]
-  >([])
 
   const onClose = useCallback(
     () => setOpenOrchestrationDialog(false),
@@ -189,11 +192,12 @@ export const OrchestrationDialog: FC = () => {
     try {
       const exportTracks = buildArrangedExportTracks(project)
       const newTracks = applyRenderResultToSong(songStore.song, exportTracks)
-      setAppliedTracks(
+      recordAppliedTracks(
         exportTracks.map((input, i) => ({
           trackId: newTracks[i].id,
           groupId: input.groupId,
           groupName: input.groupName,
+          assignmentId: input.assignmentId,
         })),
       )
       toast.success(localized["orchestration-applied"])
@@ -201,7 +205,7 @@ export const OrchestrationDialog: FC = () => {
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
     }
-  }, [project, songStore, toast, localized, onClose])
+  }, [project, songStore, toast, localized, onClose, recordAppliedTracks])
 
   const onExportMix = useCallback(() => {
     void exportOrchestrationMix(appliedTracks)

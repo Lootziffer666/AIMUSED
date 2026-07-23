@@ -420,6 +420,16 @@ export interface MuseExportTrackInput {
    */
   groupId: string;
   groupName: string;
+  /**
+   * The `MuseInstrumentAssignment.id` this track was built from — consumed by
+   * the app layer (`app/src/services/orchestration/orchestrationOrigin.ts`)
+   * to look back up the `MuseDecision` (origin/reason) that produced the
+   * track's instrument assignment, for the origin badge shown next to
+   * `InstrumentMark` in the piano roll. Doubling tracks share the same
+   * `assignmentId` as their primary assignment, since both stem from the same
+   * `MuseInstrumentAssignment`.
+   */
+  assignmentId: string;
 }
 
 /** Builds the arranged MIDI file's per-instrument tracks — deterministic, no humanization jitter. */
@@ -456,6 +466,7 @@ export function buildArrangedExportTracks(
       })),
       groupId,
       groupName: FAMILY_GROUP_LABELS[instrument.family] ?? instrument.family,
+      assignmentId: group.assignmentId,
     };
   });
 }
