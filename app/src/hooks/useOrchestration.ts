@@ -9,6 +9,9 @@ export const useOrchestration = () => {
     get project() {
       return useMobxGetter(orchestrationStore, "project")
     },
+    get trackMapping() {
+      return useMobxGetter(orchestrationStore, "trackMapping")
+    },
     get analysis() {
       return useMobxGetter(orchestrationStore, "analysis")
     },
@@ -25,8 +28,10 @@ export const useOrchestration = () => {
       return useMobxGetter(orchestrationStore, "canRedo")
     },
     loadProject: useCallback(
-      (project: Parameters<typeof orchestrationStore.loadProject>[0]) =>
-        orchestrationStore.loadProject(project),
+      (
+        project: Parameters<typeof orchestrationStore.loadProject>[0],
+        mapping?: Parameters<typeof orchestrationStore.loadProject>[1],
+      ) => orchestrationStore.loadProject(project, mapping),
       [orchestrationStore],
     ),
     dispatch: useCallback(

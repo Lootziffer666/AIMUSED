@@ -5,11 +5,13 @@ import {
 } from "@signal-app/orchestration-core"
 import {
   applyCommand,
+  saveProjectToIdb,
   type MuseCommand,
   type MuseCommandLogEntry,
   type MuseMidiProject,
 } from "@signal-app/midi-project"
-import { makeObservable, observable } from "mobx"
+import { makeObservable, observable, reaction } from "mobx"
+import type { MuseTrackMapping } from "../services/orchestration/songAdapter"
 
 const MAX_HISTORY = 50
 
@@ -32,17 +34,52 @@ const MAX_HISTORY = 50
  */
 export class OrchestrationStore {
   project: MuseMidiProject | null = null
+  /**
+   * museTrackId -> songTrackId mapping for the currently loaded `project`,
+   * rebuilt (or built fresh) by whoever calls `loadProject` — see
+   * `services/orchestration/songAdapter.ts`'s `buildMuseTrackMapping`. `null`
+   * until a project carrying a mapping has been loaded (e.g. plain
+   * `.mid`-driven analysis doesn't need one until `.museproj.json` open/save
+   * wires it up).
+   */
+  trackMapping: MuseTrackMapping | null = null
   private past: MuseMidiProject[] = []
   private future: MuseMidiProject[] = []
   commandLog: readonly MuseCommandLogEntry[] = []
 
+  /**
+   * Resolves once the most recently triggered IndexedDB autosave (see the
+   * `reaction` below) has finished — exposed only so tests can await it
+   * deterministically; UI code has no reason to read this.
+   */
+  pendingAutosave: Promise<void> | null = null
+
   constructor() {
     makeObservable<OrchestrationStore, "past" | "future">(this, {
       project: observable.ref,
+      trackMapping: observable.ref,
       past: observable.ref,
       future: observable.ref,
       commandLog: observable.ref,
     })
+
+    // Autosaves the current project to IndexedDB (via the ported
+    // `idb-store.ts`) every time it changes — after `dispatch`, `loadProject`,
+    // `undo`, or `redo`. This is intentionally separate from AIMUSED's
+    // existing plain-song localStorage autosave (`AutoSaveService.ts`), which
+    // is untouched. Fire-and-forget: a failed autosave is logged, never
+    // thrown, since it must not interrupt the user's editing flow.
+    reaction(
+      () => this.project,
+      (project) => {
+        if (project === null) {
+          return
+        }
+        this.pendingAutosave = saveProjectToIdb(project).catch((e) => {
+          console.warn("Orchestration project autosave failed:", e)
+        })
+      },
+    )
   }
 
   get canUndo(): boolean {
@@ -61,9 +98,13 @@ export class OrchestrationStore {
     return this.project?.arrangement ?? null
   }
 
-  /** Replaces the open project outright (e.g. right after import/analysis) and clears history. */
-  loadProject(project: MuseMidiProject) {
+  /**
+   * Replaces the open project outright (e.g. right after import/analysis, or
+   * after opening a `.museproj.json` file) and clears history.
+   */
+  loadProject(project: MuseMidiProject, mapping: MuseTrackMapping | null = null) {
     this.project = project
+    this.trackMapping = mapping
     this.past = []
     this.future = []
     this.commandLog = []

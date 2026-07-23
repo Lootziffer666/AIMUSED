@@ -412,6 +412,14 @@ export interface MuseExportTrackInput {
   channel: number;
   programNumber: number;
   notes: MuseExportNote[];
+  /**
+   * Instrument-family grouping, matching `MuseRenderGroup.id`/`.name` above
+   * (Strings/Woodwinds/Brass/Percussion/Keys/Choir/Additional) — consumed by
+   * the app layer for per-family "stems" export, without needing to
+   * re-derive family membership from `getInstrumentById` a second time.
+   */
+  groupId: string;
+  groupName: string;
 }
 
 /** Builds the arranged MIDI file's per-instrument tracks — deterministic, no humanization jitter. */
@@ -434,6 +442,7 @@ export function buildArrangedExportTracks(
     const name = group.isDoubling
       ? `${instrument.name} (Verdopplung: ${baseName})`
       : `${instrument.name} (${roleLabel}: ${baseName})`;
+    const groupId = familyGroupId(instrument.family);
 
     return {
       name,
@@ -445,6 +454,8 @@ export function buildArrangedExportTracks(
         startTick: n.startTick,
         durationTicks: n.durationTicks,
       })),
+      groupId,
+      groupName: FAMILY_GROUP_LABELS[instrument.family] ?? instrument.family,
     };
   });
 }

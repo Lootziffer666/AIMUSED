@@ -54,6 +54,24 @@ export function songToMuseProject(song: Song, name: string): SongMuseProject {
   const project = createProjectFromMidiBytes(`${name}.mid`, bytes)
   project.name = name
 
+  return { project, mapping: buildMuseTrackMapping(song, project) }
+}
+
+/**
+ * Builds the museTrackId -> songTrackId mapping for a `(Song, MuseMidiProject)`
+ * pair that originate from the same MIDI bytes — either because `song` was
+ * just round-tripped through `songToMuseProject` (see above), or because
+ * `song` was just decoded (via `songFromMidi`) from `project.source.rawBase64`
+ * when reopening a `.museproj.json` file (see `actions/projectFile.ts`). In
+ * both cases MUSE's importer assigns each `MuseMidiTrack` an `index` equal to
+ * its position in the original MIDI file's track list, and `songFromMidi`/
+ * `songToMidi` preserve that same track order, so `index` lines up 1:1 with
+ * `song.tracks[index]`.
+ */
+export function buildMuseTrackMapping(
+  song: Song,
+  project: MuseMidiProject,
+): MuseTrackMapping {
   const museTrackIdToSongTrackId = new Map<string, TrackId>()
   for (const museTrack of project.tracks) {
     const songTrack = song.tracks[museTrack.index]
@@ -61,8 +79,7 @@ export function songToMuseProject(song: Song, name: string): SongMuseProject {
       museTrackIdToSongTrackId.set(museTrack.id, songTrack.id)
     }
   }
-
-  return { project, mapping: { museTrackIdToSongTrackId } }
+  return { museTrackIdToSongTrackId }
 }
 
 /**

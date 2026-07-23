@@ -1,10 +1,16 @@
-import { emptySong, NoteEvent, Song, Track } from "@signal-app/core"
+import { emptySong, NoteEvent, Song, songFromMidi, Track } from "@signal-app/core"
 import {
   analyzeProject,
   buildArrangementPlan,
 } from "@signal-app/orchestration-core"
 import { buildArrangedExportTracks } from "@signal-app/orchestration-core"
-import { applyRenderResultToSong, songToMuseProject } from "./songAdapter"
+import { base64ToBytes } from "@signal-app/orchestration-core/shared"
+import { parseProjectFile, serializeProjectFile } from "@signal-app/midi-project"
+import {
+  applyRenderResultToSong,
+  buildMuseTrackMapping,
+  songToMuseProject,
+} from "./songAdapter"
 
 // A small, hand-authored melody + bass sketch, just rich enough for MUSE's
 // analysis/orchestration pipeline to produce a meaningful plan without
@@ -105,5 +111,68 @@ describe("songAdapter", () => {
       }
     }
     expect(totalNotes).toBeGreaterThan(0)
+  })
+
+  it("round-trips a MuseMidiProject through .museproj.json serialize/parse", () => {
+    const song = buildTestSong()
+    const { project } = songToMuseProject(song, "Test Song")
+    project.analysis = analyzeProject(project)
+    project.arrangement = buildArrangementPlan({
+      project,
+      recipeId: "cinematic_adventure",
+      seed: 7,
+      preserveUserOverrides: false,
+    })
+
+    const text = serializeProjectFile(project)
+    const parsed = parseProjectFile(text)
+
+    // Full structural equivalence, including nested analysis/arrangement.
+    expect(parsed).toEqual(project)
+  })
+
+  it("round-trips a not-yet-analyzed MuseMidiProject (analysis/arrangement null)", () => {
+    const song = buildTestSong()
+    const { project } = songToMuseProject(song, "Test Song")
+
+    expect(project.analysis).toBeNull()
+    expect(project.arrangement).toBeNull()
+
+    const parsed = parseProjectFile(serializeProjectFile(project))
+
+    expect(parsed.analysis).toBeNull()
+    expect(parsed.arrangement).toBeNull()
+    expect(parsed).toEqual(project)
+  })
+
+  it("rebuilds an equivalent museTrackId -> songTrackId mapping after reopening a project's embedded MIDI", () => {
+    const song = buildTestSong()
+    const { project, mapping: originalMapping } = songToMuseProject(
+      song,
+      "Test Song",
+    )
+
+    // Simulate opening a .museproj.json: parse it back, then decode its
+    // embedded original MIDI into a fresh Song exactly like a normal .mid
+    // open would (this is what `actions/projectFile.ts`'s
+    // `useOpenProjectFile` does).
+    const reparsedProject = parseProjectFile(serializeProjectFile(project))
+    const reopenedSong = songFromMidi(
+      base64ToBytes(reparsedProject.source.rawBase64),
+    )
+    const rebuiltMapping = buildMuseTrackMapping(reopenedSong, reparsedProject)
+
+    expect(rebuiltMapping.museTrackIdToSongTrackId.size).toBe(
+      originalMapping.museTrackIdToSongTrackId.size,
+    )
+    for (const museTrack of reparsedProject.tracks) {
+      const songTrackId = rebuiltMapping.museTrackIdToSongTrackId.get(
+        museTrack.id,
+      )
+      expect(songTrackId).toBeDefined()
+      if (songTrackId !== undefined) {
+        expect(reopenedSong.getTrack(songTrackId)).toBeDefined()
+      }
+    }
   })
 })

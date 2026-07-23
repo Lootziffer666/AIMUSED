@@ -21,6 +21,18 @@ export interface MuseExportTrackInput {
   channel: number;
   programNumber: number;
   notes: MuseExportNote[];
+  /**
+   * Instrument-family grouping (Strings/Woodwinds/Brass/Percussion/Keys/
+   * Choir/Additional). Not used by `buildMidiFromTracks` itself — mirrored
+   * here only to keep this structural duplicate of
+   * `@signal-app/orchestration-core`'s `MuseExportTrackInput` (see the
+   * comment on `exportOriginalMidi`/module doc above) shape-compatible, so
+   * values produced there remain assignable here without an adapter.
+   * Optional because callers that only need MIDI serialization (not
+   * per-family export) need not set it.
+   */
+  groupId?: string;
+  groupName?: string;
 }
 
 interface AbsoluteEvent {

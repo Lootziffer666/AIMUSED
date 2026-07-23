@@ -1,4 +1,5 @@
 import { FC } from "react"
+import { useOpenProjectFile, useSaveProjectFileAs } from "../../actions/projectFile"
 import { useSong } from "../../hooks/useSong"
 import { useSongFile } from "../../hooks/useSongFile"
 import { envString } from "../../localize/envString"
@@ -6,9 +7,11 @@ import { Localized } from "../../localize/useLocalization"
 import { MenuHotKey as HotKey, MenuDivider, MenuItem } from "../ui/Menu"
 
 export const FileMenu: FC<{ close: () => void }> = ({ close }) => {
-  const { fileHandle } = useSong()
+  const { fileHandle, getSong } = useSong()
   const { createNewSong, openSong, saveSong, saveAsSong, downloadSong } =
     useSongFile()
+  const openProjectFile = useOpenProjectFile()
+  const saveProjectFileAs = useSaveProjectFileAs()
 
   const onClickNew = async () => {
     close()
@@ -33,6 +36,16 @@ export const FileMenu: FC<{ close: () => void }> = ({ close }) => {
   const onClickDownload = async () => {
     close()
     await downloadSong()
+  }
+
+  const onClickOpenProject = async () => {
+    close()
+    await openProjectFile()
+  }
+
+  const onClickSaveProjectAs = async () => {
+    close()
+    await saveProjectFileAs(getSong())
   }
 
   return (
@@ -61,6 +74,16 @@ export const FileMenu: FC<{ close: () => void }> = ({ close }) => {
 
       <MenuItem onClick={onClickDownload}>
         <Localized name="download-midi" />
+      </MenuItem>
+
+      <MenuDivider />
+
+      <MenuItem onClick={onClickOpenProject}>
+        <Localized name="open-project-file" />
+      </MenuItem>
+
+      <MenuItem onClick={onClickSaveProjectAs}>
+        <Localized name="save-project-file-as" />
       </MenuItem>
     </>
   )
