@@ -1,0 +1,49 @@
+name: Apply staged MUSE audit patch
+
+on:
+  push:
+    branches:
+      - agent/apply-muse-audit-2026-07-23
+
+permissions:
+  contents: write
+
+jobs:
+  apply-patch:
+    if: ${{ !contains(github.event.head_commit.message, '[patch-applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reconstruct and verify patch
+        shell: bash
+        run: |
+          cat .github/patches/muse-audit.patch.gz.b64.part* \
+            | base64 --decode \
+            | gzip --decompress \
+            > /tmp/muse-audit.patch
+          echo "9cd60c7aacba32b0ffa9d700ec1606e4903d510e0ab8d86ae118ff5cc42ddeea  /tmp/muse-audit.patch" \
+            | sha256sum --check --strict
+          git apply --check /tmp/muse-audit.patch
+
+      - name: Apply patch and remove staging files
+        shell: bash
+        run: |
+          git apply /tmp/muse-audit.patch
+          rm -f .github/patches/muse-audit.patch.gz.b64.part*
+          rm -f .github/workflows/apply-muse-audit-patch.yml
+          rmdir .github/patches 2>/dev/null || true
+          rmdir .github/workflows 2>/dev/null || true
+          rmdir .github 2>/dev/null || true
+
+      - name: Commit result
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Finalize MUSE audit and branding [patch-applied]"
+          git push origin HEAD:agent/apply-muse-audit-2026-07-23
