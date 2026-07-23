@@ -25,7 +25,7 @@ export const EditMenu: FC<EditMenuProps> = ({ trigger }) => {
   const { selectedNoteIds, setOpenTransposeDialog, setOpenVelocityDialog } =
     usePianoRoll()
   const { hasUndo, hasRedo, undo, redo } = useHistory()
-  const { setOpenOrchestrationDialog } = useRootView()
+  const { setOpenOrchestrationDialog, setOpenHummingDialog } = useRootView()
   const copySelection = useCopySelection()
   const pasteSelection = usePasteSelection()
   const deleteSelection = useDeleteSelection()
@@ -119,6 +119,11 @@ export const EditMenu: FC<EditMenuProps> = ({ trigger }) => {
     close()
     setOpenOrchestrationDialog(true)
   }, [close, setOpenOrchestrationDialog])
+
+  const onClickHumming = useCallback(() => {
+    close()
+    setOpenHummingDialog(true)
+  }, [close, setOpenHummingDialog])
 
   return (
     <Menu open={isOpen} onOpenChange={setOpen} trigger={trigger}>
@@ -217,6 +222,10 @@ export const EditMenu: FC<EditMenuProps> = ({ trigger }) => {
 
       <MenuItem onClick={onClickOrchestration}>
         <Localized name="open-orchestration" />
+      </MenuItem>
+
+      <MenuItem onClick={onClickHumming}>
+        <Localized name="open-humming" />
       </MenuItem>
     </Menu>
   )

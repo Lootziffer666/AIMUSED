@@ -11,6 +11,7 @@ import { ControlSettingDialog } from "../ControlSettingDialog/ControlSettingDial
 import { ExportProgressDialog } from "../ExportDialog/ExportProgressDialog"
 import { Head } from "../Head/Head"
 import { HelpDialog } from "../Help/HelpDialog"
+import { HummingDialog } from "../HummingDialog/HummingDialog"
 import { Navigation } from "../Navigation/Navigation"
 import { OnBeforeUnload } from "../OnBeforeUnload/OnBeforeUnload"
 import { OnInit } from "../OnInit/OnInit"
@@ -74,6 +75,7 @@ export const RootView: FC = () => {
       <ControlSettingDialog />
       <OrchestrationDialog />
       <OrchestrationExportProgressDialog />
+      <HummingDialog />
       <OnInit />
       <OnBeforeUnload />
     </>
