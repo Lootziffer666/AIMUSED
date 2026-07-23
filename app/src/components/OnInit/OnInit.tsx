@@ -1,3 +1,4 @@
+import { listProjectsInIdb } from "@signal-app/midi-project"
 import { useProgress } from "dialog-hooks"
 import { FC, useEffect, useState } from "react"
 import { useSetSong } from "../../actions"
@@ -52,6 +53,25 @@ export const OnInit: FC = () => {
     }
   }
 
+  // Orchestration projects (analysis/arrangement/variants) autosave to
+  // IndexedDB independently of the plain-song localStorage autosave above
+  // (see `OrchestrationStore`'s constructor). A full "restore this project"
+  // prompt UI is deferred (see docs/MERGE_PLAN.md §8a) — for this pass, we
+  // only surface that a prior autosave exists, so it's discoverable without
+  // silently vanishing.
+  const checkOrchestrationAutoSave = async () => {
+    try {
+      const projects = await listProjectsInIdb()
+      if (projects.length > 0) {
+        console.info(
+          `[orchestration autosave] ${projects.length} saved orchestration project(s) found in IndexedDB (most recent: "${projects[0].name}", updated ${projects[0].updatedAt}). Restore-prompt UI is not implemented yet — open a .museproj.json file to load a project explicitly.`,
+        )
+      }
+    } catch (e) {
+      console.warn("Failed to check for orchestration autosaves:", e)
+    }
+  }
+
   const checkAutoSave = async () => {
     // Skip auto save restore if there's an argument file in Electron
     if (isRunningInElectron()) {
@@ -76,6 +96,7 @@ export const OnInit: FC = () => {
       await init()
       await loadArgumentFileIfNeeded()
       await checkAutoSave()
+      await checkOrchestrationAutoSave()
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

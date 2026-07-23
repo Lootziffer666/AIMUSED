@@ -10,6 +10,7 @@ import { MIDIMonitor } from "../services/MIDIMonitor"
 import { MIDIRecorder } from "../services/MIDIRecorder"
 import { BluetoothMIDIDeviceStore } from "./BluetoothMIDIDeviceStore"
 import { MIDIDeviceStore } from "./MIDIDeviceStore"
+import { OrchestrationStore } from "./OrchestrationStore"
 import { registerReactions } from "./reactions"
 import { SongStore } from "./SongStore"
 import { SoundFontStore } from "./SoundFontStore"
@@ -29,6 +30,7 @@ export default class RootStore {
   readonly bluetoothMIDIDeviceStore: BluetoothMIDIDeviceStore
   readonly autoSaveService: AutoSaveService
   readonly commands = new CommandService(this.songStore)
+  readonly orchestrationStore = new OrchestrationStore()
 
   constructor() {
     const context = new (window.AudioContext || window.webkitAudioContext)()
