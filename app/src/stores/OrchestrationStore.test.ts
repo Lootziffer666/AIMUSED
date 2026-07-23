@@ -2,7 +2,7 @@
 // already-ported `idb-store.test.ts` (imported first, exactly like there),
 // rather than inventing a new one.
 import "fake-indexeddb/auto"
-import { emptySong, NoteEvent } from "@signal-app/core"
+import { emptySong, NoteEvent, TrackId } from "@signal-app/core"
 import { analyzeProject } from "@signal-app/orchestration-core"
 import { loadProjectFromIdb } from "@signal-app/midi-project"
 import { songToMuseProject } from "../services/orchestration/songAdapter"
@@ -66,5 +66,24 @@ describe("OrchestrationStore autosave", () => {
     await store.pendingAutosave
     expect(store.project?.arrangement).toBeNull()
     expect((await loadProjectFromIdb(project.id)).arrangement).toBeNull()
+  })
+})
+
+describe("OrchestrationStore reset", () => {
+  it("clears all song-specific project state", () => {
+    const store = new OrchestrationStore()
+    store.loadProject(buildProject("Old song"))
+    store.recordAppliedTracks([
+      { trackId: 1 as TrackId, groupId: "group", groupName: "Group" },
+    ])
+
+    store.reset()
+
+    expect(store.project).toBeNull()
+    expect(store.trackMapping).toBeNull()
+    expect(store.commandLog).toEqual([])
+    expect(store.appliedTracks).toEqual([])
+    expect(store.canUndo).toBe(false)
+    expect(store.canRedo).toBe(false)
   })
 })

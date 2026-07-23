@@ -10,7 +10,7 @@ import {
   type MuseCommandLogEntry,
   type MuseMidiProject,
 } from "@signal-app/midi-project"
-import { makeObservable, observable, reaction } from "mobx"
+import { action, makeObservable, observable, reaction } from "mobx"
 import type { AppliedOrchestrationTrack } from "../services/orchestration/orchestrationExport"
 import type { MuseTrackMapping } from "../services/orchestration/songAdapter"
 
@@ -67,13 +67,29 @@ export class OrchestrationStore {
   pendingAutosave: Promise<void> | null = null
 
   constructor() {
-    makeObservable<OrchestrationStore, "past" | "future">(this, {
+    makeObservable<
+      OrchestrationStore,
+      | "past"
+      | "future"
+      | "loadProject"
+      | "reset"
+      | "dispatch"
+      | "recordAppliedTracks"
+      | "undo"
+      | "redo"
+    >(this, {
       project: observable.ref,
       trackMapping: observable.ref,
       past: observable.ref,
       future: observable.ref,
       commandLog: observable.ref,
       appliedTracks: observable.ref,
+      loadProject: action,
+      reset: action,
+      dispatch: action,
+      recordAppliedTracks: action,
+      undo: action,
+      redo: action,
     })
 
     // Autosaves the current project to IndexedDB (via the ported
@@ -115,12 +131,26 @@ export class OrchestrationStore {
    * Replaces the open project outright (e.g. right after import/analysis, or
    * after opening a `.museproj.json` file) and clears history.
    */
-  loadProject(project: MuseMidiProject, mapping: MuseTrackMapping | null = null) {
+  loadProject(
+    project: MuseMidiProject,
+    mapping: MuseTrackMapping | null = null,
+  ) {
     this.project = project
     this.trackMapping = mapping
     this.past = []
     this.future = []
     this.commandLog = []
+  }
+
+  /** Clears all song-specific orchestration state when a different song opens. */
+  reset() {
+    this.project = null
+    this.trackMapping = null
+    this.past = []
+    this.future = []
+    this.commandLog = []
+    this.appliedTracks = []
+    this.pendingAutosave = null
   }
 
   /**
