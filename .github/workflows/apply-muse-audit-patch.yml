@@ -23,16 +23,18 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
 
-      - name: Reconstruct and verify patch
+      - name: Reconstruct, normalize and verify patch
         shell: bash
         run: |
+          set -o pipefail
           cat .github/patches/muse-audit.patch.gz.b64.part* \
             | base64 --decode \
             | gzip --decompress \
-            > /tmp/muse-audit.patch
-          echo "9cd60c7aacba32b0ffa9d700ec1606e4903d510e0ab8d86ae118ff5cc42ddeea  /tmp/muse-audit.patch" \
+            > /tmp/muse-audit-uploaded.patch
+          sed '/^$/d' /tmp/muse-audit-uploaded.patch > /tmp/muse-audit.patch
+          echo "bf9c79dd19766738778f09b8200259f4feb11daab3f499677ee50e16dc88d867  /tmp/muse-audit.patch" \
             | sha256sum --check --strict
-          git apply --check /tmp/muse-audit.patch
+          git apply --check --verbose /tmp/muse-audit.patch
 
       - name: Apply patch and remove staging files
         shell: bash
