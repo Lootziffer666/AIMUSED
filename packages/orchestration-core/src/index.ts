@@ -1,6 +1,7 @@
 export * from "./analysis";
 export * from "./orchestration";
 export * from "./variants";
+export * from "./humming";
 export * from "./id";
 export * from "./seed-random";
 export * from "./bytes";
