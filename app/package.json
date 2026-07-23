@@ -1,7 +1,7 @@
 {
-  "name": "signal",
+  "name": "muse",
   "version": "0.0.1",
-  "description": "A friendly music sequencer application for OS X and Windows.",
+  "description": "MUSE is a local-first MIDI composition, analysis, and orchestration workstation.",
   "scripts": {
     "dev": "vite",
     "build": "vite build && node generate-service-worker.mjs",
@@ -15,14 +15,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ryohey/signal.git"
+    "url": "git+https://github.com/Lootziffer666/MUSE.git"
   },
   "author": "ryohey",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/ryohey/signal/issues"
+    "url": "https://github.com/Lootziffer666/MUSE/issues"
   },
-  "homepage": "https://github.com/ryohey/signal/",
+  "homepage": "https://github.com/Lootziffer666/MUSE#readme",
   "private": true,
   "dependencies": {
     "@breezystack/lamejs": "^1.2.7",

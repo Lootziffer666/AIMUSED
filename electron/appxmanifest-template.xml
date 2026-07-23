@@ -14,8 +14,8 @@
     <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.14316.0" MaxVersionTested="10.0.14316.0"/>
   </Dependencies>
   <Applications>
-    <Application Id="electron" Executable="app\signal.exe" EntryPoint="Windows.FullTrustApplication">
-      <uap:VisualElements BackgroundColor="#3849D4" DisplayName="signal" Square150x150Logo="assets\Square150x150Logo.png" Square44x44Logo="assets\Square44x44Logo.png" Description="MIDI Editor">
+    <Application Id="electron" Executable="app\MUSE.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements BackgroundColor="#3849D4" DisplayName="MUSE" Square150x150Logo="assets\Square150x150Logo.png" Square44x44Logo="assets\Square44x44Logo.png" Description="MIDI Editor">
         <uap:DefaultTile Wide310x150Logo="assets\Wide310x150Logo.png" Square71x71Logo="assets\SmallTile.png" Square310x310Logo="assets\LargeTile.png"/>
         <uap:SplashScreen Image="assets\SplashScreen.png" BackgroundColor="#3849D4"/>
       </uap:VisualElements>

@@ -97,7 +97,7 @@ const createWindow = (): void => {
     y: mainWindowState.y,
     width: mainWindowState.width,
     height: mainWindowState.height,
-    title: `signal v${app.getVersion()}`,
+    title: `MUSE v${app.getVersion()}`,
     titleBarStyle: isMas ? "hidden" : "default",
     trafficLightPosition: { x: 10, y: 17 },
     webPreferences: {
@@ -208,7 +208,7 @@ app.on("browser-window-focus", (_event, window) => {
 })
 
 function openSupportPage() {
-  shell.openExternal("https://signalmidi.app/support")
+  shell.openExternal("https://github.com/Lootziffer666/MUSE/issues")
 }
 
 log.info("electron:event:app-ready")

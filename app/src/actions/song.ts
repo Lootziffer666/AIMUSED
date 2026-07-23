@@ -12,6 +12,7 @@ import { useHistory } from "../hooks/useHistory"
 import { usePianoRoll, usePianoRollTickScroll } from "../hooks/usePianoRoll"
 import { usePlayer } from "../hooks/usePlayer"
 import { useSong } from "../hooks/useSong"
+import { useStores } from "../hooks/useStores"
 import { useTrackList } from "../hooks/useTrackList"
 import { useTrackMute } from "../hooks/useTrackMute"
 import { downloadSongAsMidi } from "../midi/downloadSongAsMidi"
@@ -27,6 +28,7 @@ const openSongFile = async (input: HTMLInputElement): Promise<Song | null> => {
 }
 
 export const useSetSong = () => {
+  const { orchestrationStore } = useStores()
   const { setSong } = useSong()
   const { clear: clearHistory } = useHistory()
   const { reset: resetTrackMute } = useTrackMute()
@@ -44,6 +46,9 @@ export const useSetSong = () => {
 
   return useCallback(
     (newSong: Song) => {
+      // Analysis, mappings and origin badges belong to the previous song.
+      // Project-file opening hydrates the matching state immediately afterward.
+      orchestrationStore.reset()
       setSong(newSong)
       resetTrackMute()
 
@@ -79,6 +84,7 @@ export const useSetSong = () => {
       setSelectedNoteIds,
       setSelectedTrackId,
       setArrangeSelection,
+      orchestrationStore,
     ],
   )
 }
