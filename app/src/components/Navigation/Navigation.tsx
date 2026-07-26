@@ -1,6 +1,7 @@
 import styled from "@emotion/styled"
 import Forum from "mdi-react/ForumIcon"
 import Help from "mdi-react/HelpCircleIcon"
+import Music from "mdi-react/MusicIcon"
 import Settings from "mdi-react/SettingsIcon"
 import { CSSProperties, FC, MouseEvent, useCallback } from "react"
 import { getPlatform, isRunningInElectron } from "../../helpers/platform"
@@ -109,6 +110,14 @@ export const Navigation: FC = () => {
     [setPath],
   )
 
+  const onClickJamTab = useCallback(
+    (e: MouseEvent) => {
+      e.preventDefault()
+      setPath("/jam")
+    },
+    [setPath],
+  )
+
   const onClickSettings = useCallback(
     (e: MouseEvent) => {
       e.preventDefault()
@@ -184,6 +193,16 @@ export const Navigation: FC = () => {
           <TabTitle>
             <Localized name="tempo" />
           </TabTitle>
+        </Tab>
+      </Tooltip>
+
+      <Tooltip title="MUSE Jam Room" delayDuration={500}>
+        <Tab
+          className={path === "/jam" ? "active" : undefined}
+          onMouseDown={onClickJamTab}
+        >
+          <Music style={IconStyle} />
+          <TabTitle>Jam Room</TabTitle>
         </Tab>
       </Tooltip>
 
