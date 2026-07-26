@@ -1,6 +1,11 @@
 import { atom, useAtomValue, useSetAtom } from "jotai"
 
-export type RoutePath = "/track" | "/arrange" | "/tempo" | "/jam"
+export type RoutePath =
+  | "/track"
+  | "/arrange"
+  | "/tempo"
+  | "/jam"
+  | "/jam-grid"
 
 export function useRouter() {
   return {
