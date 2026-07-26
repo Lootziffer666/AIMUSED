@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "muse.library-manifest.v1",
+  "id": "example-orchestra",
+  "name": "Example Orchestra (metadata only, no samples)",
+  "license": "manifest CC0 – the referenced samples keep their own licence",
+  "rootPath": null,
+  "patches": [
+    {
+      "id": "example-orchestra:violin-sustain",
+      "displayName": "Violin Sustain",
+      "family": "strings",
+      "instrument": "violin",
+      "range": { "lowMidi": 55, "highMidi": 103, "preferredLowMidi": 60, "preferredHighMidi": 93 },
+      "articulation": "sustain",
+      "dynamics": ["p", "mf", "f"],
+      "velocityLayers": 3,
+      "timbre": { "brightness": 0.6, "warmth": 0.6, "softness": 0.55, "sustain": 0.85 },
+      "sfzPath": "Strings/Violin/violin_sustain.sfz",
+      "keyswitches": [{ "articulation": "pizzicato", "noteNumber": 24 }],
+      "fallbackPatchIds": ["example-orchestra:viola-sustain"]
+    },
+    {
+      "id": "example-orchestra:cello-sustain",
+      "displayName": "Cello Sustain",
+      "family": "strings",
+      "instrument": "cello",
+      "range": { "lowMidi": 36, "highMidi": 81, "preferredLowMidi": 40, "preferredHighMidi": 72 },
+      "articulation": "sustain",
+      "timbre": { "brightness": 0.35, "warmth": 0.85, "softness": 0.65, "sustain": 0.9, "weight": 0.7 },
+      "sfzPath": "Strings/Cello/cello_sustain.sfz"
+    },
+    {
+      "id": "example-orchestra:horn-sustain",
+      "displayName": "Horn Sustain",
+      "family": "brass",
+      "instrument": "horn",
+      "range": { "lowMidi": 34, "highMidi": 77, "preferredLowMidi": 41, "preferredHighMidi": 72 },
+      "articulation": "sustain",
+      "timbre": { "brightness": 0.5, "warmth": 0.75, "softness": 0.45, "metallic": 0.45, "weight": 0.65 },
+      "sfzPath": "Brass/Horn/horn_sustain.sfz"
+    },
+    {
+      "id": "example-orchestra:kick",
+      "displayName": "Kick",
+      "family": "percussion",
+      "instrument": "kick",
+      "range": { "lowMidi": 36, "highMidi": 36 },
+      "articulation": "unknown",
+      "timbre": { "brightness": 0.2, "attackSharpness": 0.95, "sustain": 0.1, "weight": 0.9 },
+      "sfzPath": "Percussion/kick.sfz"
+    }
+  ]
+}

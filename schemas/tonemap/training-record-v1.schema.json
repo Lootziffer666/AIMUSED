@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://muse.local/schemas/tonemap/training-record-v1.schema.json",
+  "title": "MUSE ToneMap training record",
+  "description": "One example for the later small ranking model. Stored as JSONL, one record per line.",
+  "type": "object",
+  "required": ["schemaVersion", "id", "sourcePairId", "segmentRef", "inputFeatures", "featureMask", "featureLayoutVersion", "candidates", "provenance"],
+  "properties": {
+    "schemaVersion": { "const": "muse.training-record.v1" },
+    "id": { "type": "string" },
+    "sourcePairId": { "type": "string" },
+    "segmentRef": { "type": "string" },
+    "motifRef": { "type": "string" },
+    "inputFeatures": { "type": "array", "items": { "type": "number", "minimum": 0, "maximum": 1 } },
+    "featureMask": { "type": "array", "items": { "enum": [0, 1] } },
+    "featureLayoutVersion": { "type": "string" },
+    "candidates": { "type": "array" },
+    "selectedCandidate": { "type": "string" },
+    "requestedIntent": { "type": "object" },
+    "observedResult": { "type": "object" },
+    "humanJudgement": {
+      "type": "object",
+      "required": ["accepted"],
+      "properties": {
+        "rating": { "type": "number" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Known values include good-fit, wrong-instrument, right-melody-wrong-timbre, right-pitch-wrong-register-feel, background-too-dominant, serendipitous-alternative, better-than-original, technically-correct-emotionally-wrong."
+        },
+        "notes": { "type": "string" },
+        "accepted": { "type": "boolean" }
+      }
+    },
+    "provenance": { "type": "object" }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./src",
+    "sourceMap": true,
+    "target": "esnext",
+    "module": "esnext",
+    "esModuleInterop": true,
+    "moduleResolution": "Bundler",
+    "allowSyntheticDefaultImports": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "noImplicitAny": true,
+    "lib": ["es2023"],
+    "types": ["node"],
+    "strictNullChecks": true,
+    "alwaysStrict": true,
+    "useDefineForClassFields": true,
+    "resolveJsonModule": true,
+    "strict": true
+  },
+  "include": ["src/**/*"]
+}
