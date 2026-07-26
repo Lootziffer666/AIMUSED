@@ -1,4 +1,5 @@
 import styled from "@emotion/styled"
+import Camera from "mdi-react/CameraIcon"
 import Forum from "mdi-react/ForumIcon"
 import Help from "mdi-react/HelpCircleIcon"
 import Music from "mdi-react/MusicIcon"
@@ -122,6 +123,10 @@ export const Navigation: FC = () => {
     (e: MouseEvent) => {
       e.preventDefault()
       setPath("/jam-grid")
+  const onClickScanTab = useCallback(
+    (e: MouseEvent) => {
+      e.preventDefault()
+      setPath("/jam-scan")
     },
     [setPath],
   )
@@ -221,6 +226,13 @@ export const Navigation: FC = () => {
         >
           <PianoIcon style={IconStyle} viewBox="0 0 128 128" />
           <TabTitle>Grid</TabTitle>
+      <Tooltip title="MUSE Camera Sequencer" delayDuration={500}>
+        <Tab
+          className={path === "/jam-scan" ? "active" : undefined}
+          onMouseDown={onClickScanTab}
+        >
+          <Camera style={IconStyle} />
+          <TabTitle>Camera</TabTitle>
         </Tab>
       </Tooltip>
 
