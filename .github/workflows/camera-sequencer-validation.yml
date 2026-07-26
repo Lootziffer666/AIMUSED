@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/jam-room-camera-sequencer
+  pull_request:
+    branches:
+      - agent/muse-jam-room-vertical-slice
 
 permissions:
   contents: read
