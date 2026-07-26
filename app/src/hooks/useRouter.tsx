@@ -5,6 +5,7 @@ export type RoutePath =
   | "/arrange"
   | "/tempo"
   | "/jam"
+  | "/jam-grid"
   | "/jam-scan"
 
 export function useRouter() {
