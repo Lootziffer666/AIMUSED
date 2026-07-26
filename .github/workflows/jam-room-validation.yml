@@ -1,9 +1,9 @@
 name: Jam Room validation
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/muse-jam-room-vertical-slice
+      - main
 
 permissions:
   contents: read
