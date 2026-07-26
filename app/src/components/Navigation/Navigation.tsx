@@ -123,6 +123,10 @@ export const Navigation: FC = () => {
     (e: MouseEvent) => {
       e.preventDefault()
       setPath("/jam-grid")
+    },
+    [setPath],
+  )
+
   const onClickScanTab = useCallback(
     (e: MouseEvent) => {
       e.preventDefault()
@@ -226,6 +230,9 @@ export const Navigation: FC = () => {
         >
           <PianoIcon style={IconStyle} viewBox="0 0 128 128" />
           <TabTitle>Grid</TabTitle>
+        </Tab>
+      </Tooltip>
+
       <Tooltip title="MUSE Camera Sequencer" delayDuration={500}>
         <Tab
           className={path === "/jam-scan" ? "active" : undefined}

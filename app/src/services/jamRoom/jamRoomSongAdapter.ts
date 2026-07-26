@@ -67,7 +67,7 @@ export function applyJamRoomTakeToSong(
       type: "channel",
       subtype: "programChange",
       tick: 0,
-      value: PROGRAM_BY_ROLE[take.role] ?? 0,
+      value: take.program ?? PROGRAM_BY_ROLE[take.role] ?? 0,
     })
   }
 
