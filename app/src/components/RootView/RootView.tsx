@@ -13,6 +13,7 @@ import { Head } from "../Head/Head"
 import { HelpDialog } from "../Help/HelpDialog"
 import { HummingDialog } from "../HummingDialog/HummingDialog"
 import { JamRoom } from "../JamRoom/JamRoom"
+import { SongMakerGrid } from "../JamRoom/SongMakerGrid"
 import { Navigation } from "../Navigation/Navigation"
 import { OnBeforeUnload } from "../OnBeforeUnload/OnBeforeUnload"
 import { OnInit } from "../OnInit/OnInit"
@@ -48,6 +49,7 @@ const Routes: FC = () => {
       {path === "/tempo" && <TempoEditor />}
       {path === "/arrange" && <ArrangeEditor />}
       {path === "/jam" && <JamRoom />}
+      {path === "/jam-grid" && <SongMakerGrid />}
     </>
   )
 }
