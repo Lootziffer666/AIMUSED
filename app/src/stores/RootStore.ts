@@ -17,6 +17,7 @@ import { SoundFontStore } from "./SoundFontStore"
 
 export default class RootStore {
   readonly songStore = new SongStore()
+  readonly audioContext: AudioContext
   readonly midiDeviceStore: MIDIDeviceStore
   readonly player: Player
   readonly synth: SoundFontSynth
@@ -34,6 +35,7 @@ export default class RootStore {
 
   constructor() {
     const context = new (window.AudioContext || window.webkitAudioContext)()
+    this.audioContext = context
     this.synth = new SoundFontSynth(context)
     this.metronomeSynth = new SoundFontSynth(context)
     this.synthGroup = new GroupOutput(this.metronomeSynth)
