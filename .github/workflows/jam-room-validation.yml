@@ -1,0 +1,25 @@
+name: Jam Room validation
+
+on:
+  push:
+    branches:
+      - agent/muse-jam-room-vertical-slice
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npm run typecheck -w app
+      - run: npm run lint
