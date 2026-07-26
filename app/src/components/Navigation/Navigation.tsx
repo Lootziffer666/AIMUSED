@@ -223,13 +223,13 @@ export const Navigation: FC = () => {
         </Tab>
       </Tooltip>
 
-      <Tooltip title="MUSE Song Maker" delayDuration={500}>
+      <Tooltip title="MUSE Pattern-Editor" delayDuration={500}>
         <Tab
           className={path === "/jam-grid" ? "active" : undefined}
           onMouseDown={onClickGridTab}
         >
           <PianoIcon style={IconStyle} viewBox="0 0 128 128" />
-          <TabTitle>Grid</TabTitle>
+          <TabTitle>Patterns</TabTitle>
         </Tab>
       </Tooltip>
 
