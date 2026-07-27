@@ -19,6 +19,16 @@ export interface AudioDecoder {
   readonly name: string
   /** Formats this decoder claims, e.g. ["wav"] */
   readonly formats: string[]
+  /**
+   * Decoders that can work synchronously do, so the CLI stays a plain
+   * pipeline. Host decoders that cannot (the Web Audio API, a worker) return
+   * a promise and are reached through `decodeAsync`.
+   */
+  decode(bytes: Uint8Array): PcmBuffer | Promise<PcmBuffer>
+}
+
+/** A decoder that never returns a promise – usable from synchronous code. */
+export interface SyncAudioDecoder extends AudioDecoder {
   decode(bytes: Uint8Array): PcmBuffer
 }
 
@@ -49,7 +59,7 @@ export class DecoderRegistry {
     return [...new Set(this.decoders.flatMap((d) => d.formats))].sort()
   }
 
-  decode(format: string, bytes: Uint8Array): PcmBuffer {
+  private find(format: string): AudioDecoder {
     const decoder = this.decoders.find((d) =>
       d.formats.includes(format.toLowerCase()),
     )
@@ -61,7 +71,24 @@ export class DecoderRegistry {
         format,
       )
     }
-    return decoder.decode(bytes)
+    return decoder
+  }
+
+  decode(format: string, bytes: Uint8Array): PcmBuffer {
+    const decoder = this.find(format)
+    const result = decoder.decode(bytes)
+    if (result instanceof Promise) {
+      throw new AudioDecodeError(
+        `decoder "${decoder.name}" for "${format}" is asynchronous – use decodeAsync()`,
+        format,
+      )
+    }
+    return result
+  }
+
+  /** Works with both kinds of decoder; the only entry point a host needs. */
+  async decodeAsync(format: string, bytes: Uint8Array): Promise<PcmBuffer> {
+    return await this.find(format).decode(bytes)
   }
 }
 
@@ -70,7 +97,7 @@ export class DecoderRegistry {
 // ---------------------------------------------------------------------------
 
 /** Minimal RIFF/WAVE reader: PCM 8/16/24/32 bit and 32 bit float. */
-export const wavDecoder: AudioDecoder = {
+export const wavDecoder: SyncAudioDecoder = {
   name: "builtin-wav",
   formats: ["wav", "wave"],
   decode(bytes: Uint8Array): PcmBuffer {

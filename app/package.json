@@ -50,6 +50,7 @@
     "@signal-app/midi-project": "*",
     "@signal-app/orchestration-core": "*",
     "@signal-app/player": "*",
+    "@signal-app/tonemap-core": "*",
     "color": "^5.0.3",
     "dialog-hooks": "*",
     "gl-matrix": "^3.4.4",

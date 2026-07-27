@@ -1,10 +1,16 @@
 import styled from "@emotion/styled"
+import ChevronLeft from "mdi-react/ChevronLeftIcon"
+import Close from "mdi-react/CloseIcon"
+import Menu from "mdi-react/MenuIcon"
 import type { FC } from "react"
 import type {
   MusePattern,
   MusePatternLayerKind,
   MusePatternTrackLayer,
 } from "../../entities/pattern/MusePattern"
+import { Localized, useLocalization } from "../../localize/useLocalization"
+import { IconButton } from "../ui/IconButton"
+import { Chip, InlineSelect } from "../ui/Panel"
 
 /**
  * Instrument layers live in a rail that is a narrow strip by default.
@@ -13,18 +19,18 @@ import type {
  */
 
 export const MELODIC_INSTRUMENTS: { name: string; program: number }[] = [
-  { name: "Klavier", program: 0 },
-  { name: "E-Piano", program: 4 },
-  { name: "Gitarre", program: 24 },
+  { name: "Piano", program: 0 },
+  { name: "Electric Piano", program: 4 },
+  { name: "Guitar", program: 24 },
   { name: "Bass", program: 33 },
-  { name: "Violine", program: 40 },
+  { name: "Violin", program: 40 },
   { name: "Cello", program: 42 },
-  { name: "Streicher", program: 48 },
-  { name: "Chor", program: 52 },
-  { name: "Trompete", program: 56 },
-  { name: "Saxophon", program: 65 },
-  { name: "Flöte", program: 73 },
-  { name: "Synth-Pad", program: 89 },
+  { name: "Strings", program: 48 },
+  { name: "Choir", program: 52 },
+  { name: "Trumpet", program: 56 },
+  { name: "Saxophone", program: 65 },
+  { name: "Flute", program: 73 },
+  { name: "Synth Pad", program: 89 },
 ]
 
 export const DRUM_ZONES: { name: string; zoneId: string }[] = [
@@ -35,172 +41,146 @@ export const DRUM_ZONES: { name: string; zoneId: string }[] = [
   { name: "Tom", zoneId: "tom" },
 ]
 
-const Rail = styled.aside<{ open: boolean }>`
+const Rail = styled.aside`
   display: flex;
-  width: ${({ open }) => (open ? "254px" : "58px")};
+  width: 3.5rem;
   flex-direction: column;
   flex-shrink: 0;
-  gap: 8px;
-  padding: 10px 8px;
+  gap: 0.4rem;
+  padding: 0.5rem;
   overflow-y: auto;
-  border-right: 1px solid rgba(167, 139, 250, 0.16);
-  background: rgba(16, 12, 30, 0.72);
-  transition: width 0.16s ease;
+  box-sizing: border-box;
+  border-right: 1px solid var(--color-divider);
+  background: var(--color-background);
+
+  &[data-open="true"] {
+    width: 15rem;
+  }
 `
 
 const RailHead = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: 0.4rem;
 `
 
 const RailTitle = styled.span`
-  color: #c4b5fd;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  font-size: 0.7rem;
+  font-weight: 600;
 `
 
-const IconButton = styled.button`
-  display: grid;
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-  place-items: center;
-  border: 1px solid rgba(167, 139, 250, 0.28);
-  border-radius: 9px;
-  color: #ddd6fe;
-  background: rgba(167, 139, 250, 0.12);
-  font-size: 14px;
+const LayerCard = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
   cursor: pointer;
 
   &:hover {
-    background: rgba(167, 139, 250, 0.26);
+    background: var(--color-highlight);
   }
-`
 
-const LayerCard = styled.div<{ active: boolean; color: string }>`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 9px 10px;
-  border: 1px solid
-    ${({ active, color }) => (active ? color : "rgba(255,255,255,0.09)")};
-  border-radius: 12px;
-  background: ${({ active }) =>
-    active ? "rgba(167, 139, 250, 0.16)" : "rgba(255, 255, 255, 0.03)"};
-  cursor: pointer;
+  &[data-selected="true"] {
+    border-color: var(--color-divider);
+    background: var(--color-highlight);
+  }
 `
 
 const LayerTop = styled.div`
   display: flex;
-  gap: 8px;
+  gap: 0.4rem;
   align-items: center;
 `
 
-const Dot = styled.span<{ color: string; dim: boolean }>`
-  width: 12px;
-  height: 12px;
+const Dot = styled.span`
+  width: 0.6rem;
+  height: 0.6rem;
   flex-shrink: 0;
   border-radius: 50%;
-  background: ${({ color }) => color};
-  opacity: ${({ dim }) => (dim ? 0.3 : 1)};
 `
 
 const NameInput = styled.input`
   width: 100%;
   min-width: 0;
-  padding: 3px 6px;
+  height: 1.4rem;
+  box-sizing: border-box;
+  padding: 0 0.3rem;
   border: 1px solid transparent;
-  border-radius: 6px;
-  color: #f5f3ff;
+  border-radius: 0.2rem;
+  color: var(--color-text);
   background: transparent;
-  font: inherit;
-  font-size: 12px;
+  font-family: inherit;
+  font-size: 0.75rem;
+  outline: none;
 
   &:focus {
-    border-color: rgba(167, 139, 250, 0.5);
-    background: rgba(0, 0, 0, 0.3);
-    outline: none;
+    border-color: var(--color-theme);
+    background: var(--color-background-dark);
   }
 `
 
 const Chips = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 0.25rem;
 `
 
-const Chip = styled.button<{ on: boolean; tone?: string }>`
-  padding: 3px 7px;
-  border: 1px solid
-    ${({ on, tone }) => (on ? (tone ?? "#a78bfa") : "rgba(255,255,255,0.14)")};
-  border-radius: 999px;
-  color: ${({ on, tone }) => (on ? (tone ?? "#ddd6fe") : "rgba(255,255,255,0.5)")};
-  background: ${({ on, tone }) =>
-    on ? `${tone ?? "#a78bfa"}26` : "transparent"};
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  cursor: pointer;
-`
-
-const Select = styled.select`
-  width: 100%;
-  padding: 4px 6px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 8px;
-  color: #ede9fe;
-  background: rgba(10, 8, 20, 0.9);
-  font-size: 11px;
-  cursor: pointer;
-`
-
-const StripDot = styled.button<{
-  color: string
-  active: boolean
-  dim: boolean
-}>`
+const StripDot = styled.button`
   display: grid;
-  width: 38px;
-  height: 38px;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
   place-items: center;
-  border: 2px solid ${({ color, active }) => (active ? color : "transparent")};
-  border-radius: 12px;
-  background: ${({ color, dim }) => (dim ? `${color}33` : `${color}66`)};
-  color: #0f0a1e;
-  font-size: 10px;
-  font-weight: 800;
+  border: 2px solid transparent;
+  border-radius: 0.5rem;
+  color: var(--color-text);
+  background: var(--color-background-secondary);
+  font-family: inherit;
+  font-size: 0.65rem;
+  font-weight: 600;
   cursor: pointer;
+  outline: none;
+
+  &:hover {
+    background: var(--color-highlight);
+  }
 `
 
 const AddRow = styled.div`
   display: flex;
-  gap: 6px;
+  gap: 0.25rem;
 `
 
 const AddButton = styled.button`
   flex: 1;
-  padding: 7px 8px;
-  border: 1px dashed rgba(167, 139, 250, 0.45);
-  border-radius: 10px;
-  color: #c4b5fd;
+  height: 1.8rem;
+  border: 1px dashed var(--color-divider);
+  border-radius: 0.3rem;
+  color: var(--color-text-secondary);
   background: transparent;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-family: inherit;
+  font-size: 0.7rem;
   cursor: pointer;
+  outline: none;
 
   &:hover {
-    background: rgba(167, 139, 250, 0.14);
+    background: var(--color-highlight);
+    color: var(--color-text);
   }
 `
 
-const Danger = styled(Chip)`
+const RemoveChip = styled(Chip)`
   margin-left: auto;
+  padding: 0 0.25rem;
+
+  &:hover {
+    border-color: var(--color-red);
+    color: var(--color-red);
+  }
 `
 
 export interface LayerRailProps {
@@ -233,18 +213,26 @@ export const LayerRail: FC<LayerRailProps> = ({
   onAddLayer,
   onRemoveLayer,
 }) => {
+  const localized = useLocalization()
+
   if (!open) {
     return (
-      <Rail open={false}>
-        <IconButton onClick={onToggleOpen} title="Ebenen öffnen">
-          ☰
+      <Rail data-open={false}>
+        <IconButton
+          onClick={onToggleOpen}
+          aria-label={localized["pattern-layer-rail"]}
+        >
+          <Menu size="1.1rem" />
         </IconButton>
         {pattern.trackLayers.map((layer) => (
           <StripDot
             key={layer.id}
-            color={layer.color}
-            active={layer.id === activeLayerId}
-            dim={!layer.visible || layer.muted}
+            data-selected={layer.id === activeLayerId}
+            style={{
+              borderColor:
+                layer.id === activeLayerId ? layer.color : "transparent",
+              opacity: !layer.visible || layer.muted ? 0.4 : 1,
+            }}
             onClick={() => onSelect(layer.id)}
             title={layer.name}
           >
@@ -256,104 +244,110 @@ export const LayerRail: FC<LayerRailProps> = ({
   }
 
   return (
-    <Rail open>
+    <Rail data-open={true}>
       <RailHead>
-        <RailTitle>Ebenen</RailTitle>
-        <IconButton onClick={onToggleOpen} title="Ebenen schließen">
-          ‹
+        <RailTitle>
+          <Localized name="pattern-layers" />
+        </RailTitle>
+        <IconButton
+          onClick={onToggleOpen}
+          aria-label={localized["pattern-layer-rail"]}
+        >
+          <ChevronLeft size="1.1rem" />
         </IconButton>
       </RailHead>
 
       {pattern.trackLayers.map((layer: MusePatternTrackLayer) => (
         <LayerCard
           key={layer.id}
-          color={layer.color}
-          active={layer.id === activeLayerId}
+          data-selected={layer.id === activeLayerId}
           onPointerDown={() => onSelect(layer.id)}
         >
           <LayerTop>
-            <Dot color={layer.color} dim={!layer.visible} />
+            <Dot
+              style={{
+                background: layer.color,
+                opacity: layer.visible ? 1 : 0.3,
+              }}
+            />
             <NameInput
               value={layer.name}
               onChange={(e) => onRename(layer.id, e.target.value)}
-              aria-label="Ebenenname"
+              aria-label={localized["pattern-layer-name"]}
             />
           </LayerTop>
 
           {layer.kind === "melodic" ? (
-            <Select
+            <InlineSelect
               value={layer.program ?? 0}
               onChange={(e) =>
                 onSetInstrument(layer.id, Number(e.target.value))
               }
-              aria-label="Instrument"
+              aria-label={localized["pattern-instrument"]}
             >
               {MELODIC_INSTRUMENTS.map((instrument) => (
                 <option key={instrument.program} value={instrument.program}>
                   {instrument.name}
                 </option>
               ))}
-            </Select>
+            </InlineSelect>
           ) : (
-            <Select
+            <InlineSelect
               value={layer.drumZoneId ?? "kick"}
               onChange={(e) => onSetDrumZone(layer.id, e.target.value)}
-              aria-label="Sound"
+              aria-label={localized["pattern-sound"]}
             >
               {DRUM_ZONES.map((zone) => (
                 <option key={zone.zoneId} value={zone.zoneId}>
                   {zone.name}
                 </option>
               ))}
-            </Select>
+            </InlineSelect>
           )}
 
           <Chips>
             <Chip
-              on={layer.visible}
+              data-selected={layer.visible}
               onClick={() => onToggleFlag(layer.id, "visible")}
-              title="Sichtbar"
             >
-              {layer.visible ? "sichtbar" : "aus"}
+              <Localized name="pattern-visible" />
             </Chip>
             <Chip
-              on={layer.muted}
-              tone="#fb7185"
+              data-selected={layer.muted}
+              data-tone="danger"
               onClick={() => onToggleFlag(layer.id, "muted")}
             >
-              mute
+              <Localized name="pattern-mute" />
             </Chip>
             <Chip
-              on={layer.soloed}
-              tone="#fbbf24"
+              data-selected={layer.soloed}
               onClick={() => onToggleFlag(layer.id, "soloed")}
             >
-              solo
+              <Localized name="pattern-solo" />
             </Chip>
             <Chip
-              on={layer.locked}
-              tone="#38bdf8"
+              data-selected={layer.locked}
               onClick={() => onToggleFlag(layer.id, "locked")}
             >
-              lock
+              <Localized name="pattern-lock" />
             </Chip>
-            <Danger
-              on={false}
-              tone="#fb7185"
+            <RemoveChip
               onClick={() => onRemoveLayer(layer.id)}
-              title="Ebene löschen"
+              aria-label={localized["pattern-remove-layer"]}
             >
-              ✕
-            </Danger>
+              <Close size="0.8rem" />
+            </RemoveChip>
           </Chips>
         </LayerCard>
       ))}
 
       <AddRow>
         <AddButton onClick={() => onAddLayer("melodic")}>
-          + Instrument
+          + <Localized name="pattern-instrument" />
         </AddButton>
-        <AddButton onClick={() => onAddLayer("percussion")}>+ Drum</AddButton>
+        <AddButton onClick={() => onAddLayer("percussion")}>
+          + <Localized name="pattern-drum" />
+        </AddButton>
       </AddRow>
     </Rail>
   )

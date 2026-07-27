@@ -1,6 +1,11 @@
 import styled from "@emotion/styled"
 import { getTempo } from "@signal-app/core"
 import { useToast } from "dialog-hooks"
+import ChevronLeft from "mdi-react/ChevronLeftIcon"
+import Pause from "mdi-react/PauseIcon"
+import Play from "mdi-react/PlayIcon"
+import Redo from "mdi-react/RedoIcon"
+import Undo from "mdi-react/UndoIcon"
 import { toJS } from "mobx"
 import {
   type FC,
@@ -19,6 +24,7 @@ import {
   stepCount,
 } from "../../entities/pattern/MusePattern"
 import { useStores } from "../../hooks/useStores"
+import { Localized, useLocalization } from "../../localize/useLocalization"
 import { getJamAudioEngine } from "../../services/jamRoom/audio/JamAudioEngine"
 import { PatternPlayer } from "../../services/pattern/PatternPlayer"
 import {
@@ -51,126 +57,24 @@ import {
   updateLayer,
 } from "../../services/pattern/patternOps"
 import { applyPatternToSong } from "../../services/pattern/patternSongAdapter"
+import { ToolbarButton } from "../Toolbar/ToolbarButton"
+import {
+  ToolbarButtonGroup,
+  ToolbarButtonGroupItem,
+} from "../Toolbar/ToolbarButtonGroup"
+import { Button, PrimaryButton } from "../ui/Button"
+import {
+  FieldGroup,
+  InlineInput,
+  InlineSelect,
+  NumberField,
+  Spacer,
+  Workspace,
+  WorkspaceHeader,
+} from "../ui/Panel"
 import { EventDrawer } from "./EventDrawer"
 import { DRUM_ZONES, LayerRail, MELODIC_INSTRUMENTS } from "./LayerRail"
 import { type CanvasGesture, PatternCanvas } from "./PatternCanvas"
-
-const Shell = styled.div`
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-  color: #ede9fe;
-  background:
-    radial-gradient(900px 600px at 12% -10%, rgba(124, 58, 237, 0.28), transparent 62%),
-    radial-gradient(720px 520px at 92% 110%, rgba(236, 72, 153, 0.16), transparent 60%),
-    #0d0a18;
-`
-
-const Bar = styled.header`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid rgba(167, 139, 250, 0.16);
-`
-
-const NameInput = styled.input`
-  min-width: 140px;
-  max-width: 260px;
-  padding: 7px 10px;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  color: #f5f3ff;
-  background: rgba(255, 255, 255, 0.05);
-  font-size: 15px;
-  font-weight: 700;
-
-  &:focus {
-    border-color: rgba(167, 139, 250, 0.6);
-    outline: none;
-  }
-`
-
-const Button = styled.button<{ tone?: "primary" | "ghost"; on?: boolean }>`
-  display: flex;
-  gap: 7px;
-  align-items: center;
-  padding: 9px 14px;
-  border: 1px solid
-    ${({ tone, on }) =>
-      tone === "primary"
-        ? "transparent"
-        : on
-          ? "#a78bfa"
-          : "rgba(255,255,255,0.14)"};
-  border-radius: 10px;
-  color: ${({ tone, on }) =>
-    tone === "primary" ? "#1b1030" : on ? "#ede9fe" : "#c7c2dd"};
-  background: ${({ tone, on }) =>
-    tone === "primary"
-      ? "#a78bfa"
-      : on
-        ? "rgba(167,139,250,0.24)"
-        : "rgba(255,255,255,0.04)"};
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: transform 0.1s ease, background 0.12s ease;
-
-  &:hover:not(:disabled) {
-    transform: translateY(-1px);
-  }
-
-  &:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-  }
-`
-
-const Spacer = styled.div`
-  flex: 1;
-`
-
-const Group = styled.div`
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  padding: 4px 8px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-`
-
-const NumberInput = styled.input`
-  width: 54px;
-  padding: 4px 6px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 7px;
-  color: #ede9fe;
-  background: rgba(10, 8, 20, 0.85);
-  font-family: ui-monospace, Menlo, monospace;
-  font-size: 12px;
-  text-align: center;
-`
-
-const MiniSelect = styled.select`
-  padding: 4px 6px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 7px;
-  color: #ede9fe;
-  background: rgba(10, 8, 20, 0.9);
-  font-size: 11px;
-  cursor: pointer;
-`
 
 const Body = styled.div`
   display: flex;
@@ -187,12 +91,18 @@ const CanvasArea = styled.div`
 
 const Notice = styled.div`
   display: flex;
-  gap: 10px;
+  gap: 0.75rem;
   align-items: center;
-  padding: 7px 16px;
-  color: #fcd34d;
-  background: rgba(120, 80, 10, 0.35);
-  font-size: 11px;
+  padding: 0.4rem 1rem;
+  border-bottom: 1px solid var(--color-divider);
+  background: var(--color-background-secondary);
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+`
+
+const NameField = styled(InlineInput)`
+  min-width: 8rem;
+  max-width: 16rem;
 `
 
 const GRID_OPTIONS = [
@@ -214,6 +124,7 @@ export const PatternEditor: FC<PatternEditorProps> = ({
   const rootStore = useStores()
   const { songStore, patternStore, player, synth, synthGroup } = rootStore
   const toast = useToast()
+  const localized = useLocalization()
   const engine = getJamAudioEngine()
 
   const stored = patternStore.get(patternId)
@@ -407,7 +318,7 @@ export const PatternEditor: FC<PatternEditorProps> = ({
         },
       )
       if (!result.noteId) {
-        toast.info("Diese Ebene ist gesperrt.")
+        toast.info(localized["pattern-layer-locked"])
         return null
       }
       // Subsequent drag events of this gesture extend the note that was just
@@ -417,7 +328,7 @@ export const PatternEditor: FC<PatternEditorProps> = ({
       previewNote(layerId, noteNumber)
       return result.noteId
     },
-    [live, previewNote, toast],
+    [live, localized, previewNote, toast],
   )
 
   const handleDragNote = useCallback(
@@ -480,14 +391,14 @@ export const PatternEditor: FC<PatternEditorProps> = ({
     patternStore.setBinding(pattern.id, binding)
     patternStore.save(toJS(pattern))
     toast.success(
-      `„${pattern.name}“ im Song aktualisiert (${Object.keys(binding).length} Spuren).`,
+      `${localized["pattern-exported"]}: ${pattern.name} (${Object.keys(binding).length})`,
     )
-  }, [pattern, patternStore, songStore.song, toast])
+  }, [localized, pattern, patternStore, songStore.song, toast])
 
   const handleSave = useCallback(() => {
     patternStore.save(toJS(pattern))
-    toast.success("Pattern gespeichert.")
-  }, [pattern, patternStore, toast])
+    toast.success(localized["pattern-saved"])
+  }, [localized, pattern, patternStore, toast])
 
   const handleClose = useCallback(() => {
     playerRef.current?.stop()
@@ -550,38 +461,49 @@ export const PatternEditor: FC<PatternEditorProps> = ({
 
   if (!stored || !pattern.id) {
     return (
-      <Shell>
-        <Bar>
-          <Button onClick={onClose}>← Zurück</Button>
-          <span>Pattern nicht gefunden.</span>
-        </Bar>
-      </Shell>
+      <Workspace>
+        <WorkspaceHeader>
+          <Button onClick={onClose}>
+            <ChevronLeft size="1rem" />
+            <Localized name="patterns" />
+          </Button>
+          <span>
+            <Localized name="pattern-not-found" />
+          </span>
+        </WorkspaceHeader>
+      </Workspace>
     )
   }
 
   const steps = stepCount(pattern)
 
   return (
-    <Shell>
-      <Bar>
-        <Button onClick={handleClose} title="Zurück zur Übersicht">
-          ← Patterns
+    <Workspace>
+      <WorkspaceHeader>
+        <Button onClick={handleClose}>
+          <ChevronLeft size="1rem" />
+          <Localized name="patterns" />
         </Button>
-        <NameInput
+        <NameField
           value={pattern.name}
           onChange={(e) => commit(setPatternName(pattern, e.target.value))}
-          aria-label="Pattern-Name"
+          aria-label={localized["pattern-name"]}
         />
-        <Button tone="primary" onClick={togglePlay}>
-          {isPlaying ? "■ Stop" : "▶ Play"}
-        </Button>
-        <Button on={loop} onClick={() => setLoop((l) => !l)}>
-          Loop
-        </Button>
+        <ToolbarButton
+          data-testid="pattern-transport"
+          onMouseDown={togglePlay}
+          selected={isPlaying}
+          aria-label={localized["play-pause"]}
+        >
+          {isPlaying ? <Pause size="1rem" /> : <Play size="1rem" />}
+        </ToolbarButton>
+        <ToolbarButton onMouseDown={() => setLoop((l) => !l)} selected={loop}>
+          <Localized name="pattern-loop" />
+        </ToolbarButton>
 
-        <Group>
-          Steps
-          <NumberInput
+        <FieldGroup>
+          <Localized name="pattern-steps" />
+          <NumberField
             type="number"
             min={1}
             max={512}
@@ -589,86 +511,98 @@ export const PatternEditor: FC<PatternEditorProps> = ({
             onChange={(e) =>
               commit(setPatternSteps(pattern, Number(e.target.value) || 1))
             }
-            aria-label="Pattern-Länge in Schritten"
+            aria-label={localized["pattern-steps"]}
           />
-        </Group>
+        </FieldGroup>
 
-        <Group>
-          Raster
-          <MiniSelect
+        <FieldGroup>
+          <Localized name="snap-to-grid" />
+          <InlineSelect
             value={pattern.gridDivision}
             onChange={(e) =>
               commit(setGridDivision(pattern, Number(e.target.value)))
             }
-            aria-label="Rastermaß"
+            aria-label={localized["snap-to-grid"]}
           >
             {GRID_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
-          </MiniSelect>
-        </Group>
+          </InlineSelect>
+        </FieldGroup>
 
-        <Group>
-          Zoom
-          <Button
-            onClick={() => setStepWidth((w) => Math.max(16, w - 8))}
-            aria-label="Verkleinern"
-          >
-            −
-          </Button>
-          <Button
-            onClick={() => setStepWidth((w) => Math.min(96, w + 8))}
-            aria-label="Vergrößern"
-          >
-            +
-          </Button>
-        </Group>
+        <FieldGroup as="div">
+          <Localized name="pattern-zoom" />
+          <ToolbarButtonGroup>
+            <ToolbarButtonGroupItem
+              onMouseDown={() => setStepWidth((w) => Math.max(16, w - 8))}
+              aria-label={localized["pattern-zoom-out"]}
+            >
+              −
+            </ToolbarButtonGroupItem>
+            <ToolbarButtonGroupItem
+              onMouseDown={() => setStepWidth((w) => Math.min(96, w + 8))}
+              aria-label={localized["pattern-zoom-in"]}
+            >
+              +
+            </ToolbarButtonGroupItem>
+          </ToolbarButtonGroup>
+        </FieldGroup>
 
-        <Group>
-          Oktave
-          <Button onClick={() => setBasePitch((p) => Math.max(0, p - 12))}>
-            −
-          </Button>
-          <Button onClick={() => setBasePitch((p) => Math.min(96, p + 12))}>
-            +
-          </Button>
-        </Group>
+        <FieldGroup as="div">
+          <Localized name="pattern-octave" />
+          <ToolbarButtonGroup>
+            <ToolbarButtonGroupItem
+              onMouseDown={() => setBasePitch((p) => Math.max(0, p - 12))}
+              aria-label={localized["one-octave-down"]}
+            >
+              −
+            </ToolbarButtonGroupItem>
+            <ToolbarButtonGroupItem
+              onMouseDown={() => setBasePitch((p) => Math.min(96, p + 12))}
+              aria-label={localized["one-octave-up"]}
+            >
+              +
+            </ToolbarButtonGroupItem>
+          </ToolbarButtonGroup>
+        </FieldGroup>
 
         <Spacer />
 
-        <Button
-          onClick={() => setHistory(undo)}
+        <ToolbarButton
+          onMouseDown={() => setHistory(undo)}
           disabled={!canUndo(history)}
-          title="Rückgängig"
+          aria-label={localized["orchestration-undo"]}
         >
-          ↶
-        </Button>
-        <Button
-          onClick={() => setHistory(redo)}
+          <Undo size="1rem" />
+        </ToolbarButton>
+        <ToolbarButton
+          onMouseDown={() => setHistory(redo)}
           disabled={!canRedo(history)}
-          title="Wiederherstellen"
+          aria-label={localized["orchestration-redo"]}
         >
-          ↷
+          <Redo size="1rem" />
+        </ToolbarButton>
+        <ToolbarButton onMouseDown={openRail} selected={railOpen}>
+          <Localized name="pattern-layers" />
+        </ToolbarButton>
+        <ToolbarButton onMouseDown={openDrawer} selected={drawerOpen}>
+          <Localized name="pattern-event" />
+        </ToolbarButton>
+        <Button onClick={handleSave}>
+          <Localized name="pattern-save" />
         </Button>
-        <Button on={railOpen} onClick={openRail}>
-          Ebenen
-        </Button>
-        <Button on={drawerOpen} onClick={openDrawer}>
-          Ereignis
-        </Button>
-        <Button onClick={handleSave}>Speichern</Button>
-        <Button tone="primary" onClick={handleExport}>
-          In den Song
-        </Button>
-      </Bar>
+        <PrimaryButton onClick={handleExport}>
+          <Localized name="pattern-to-song" />
+        </PrimaryButton>
+      </WorkspaceHeader>
 
       {hasOverhang(pattern) && (
         <Notice>
-          Ereignisse hinter dem Endmarker bleiben erhalten, klingen aber nicht.
+          <Localized name="pattern-overhang" />
           <Button onClick={() => commit(trimOverhang(pattern))}>
-            Endgültig abschneiden
+            <Localized name="pattern-trim" />
           </Button>
         </Notice>
       )}
@@ -712,7 +646,7 @@ export const PatternEditor: FC<PatternEditorProps> = ({
           onAddLayer={(kind: MusePatternLayerKind) => {
             const next = addLayer(pattern, {
               kind,
-              name: kind === "melodic" ? "Instrument" : "Kick",
+              name: kind === "melodic" ? "Piano" : "Kick",
               program: kind === "melodic" ? 0 : undefined,
               drumZoneId: kind === "melodic" ? undefined : "kick",
             })
@@ -722,7 +656,7 @@ export const PatternEditor: FC<PatternEditorProps> = ({
           }}
           onRemoveLayer={(layerId) => {
             if (pattern.trackLayers.length <= 1) {
-              toast.info("Mindestens eine Ebene muss bleiben.")
+              toast.info(localized["pattern-last-layer"])
               return
             }
             commit(removeLayer(pattern, layerId))
@@ -817,6 +751,6 @@ export const PatternEditor: FC<PatternEditorProps> = ({
           )}
         </CanvasArea>
       </Body>
-    </Shell>
+    </Workspace>
   )
 }

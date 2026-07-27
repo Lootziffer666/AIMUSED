@@ -13,6 +13,7 @@ import {
   type MusePatternTrackLayer,
   stepCount,
 } from "../../entities/pattern/MusePattern"
+import { useLocalization } from "../../localize/useLocalization"
 
 /**
  * The pattern canvas: horizontal = time, vertical = pitch.
@@ -33,45 +34,52 @@ const Scroller = styled.div`
   overflow: auto;
   overscroll-behavior: contain;
   touch-action: pan-x pan-y;
+  background: var(--color-editor-background);
 `
 
 const Sheet = styled.div`
   position: relative;
-  padding: 8px 120px 16px 8px;
+  padding: 0.5rem 7.5rem 1rem 0.5rem;
   min-width: min-content;
 `
 
 const Grid = styled.div`
   position: relative;
-  border: 1px solid rgba(167, 139, 250, 0.16);
-  border-radius: 12px;
-  background: rgba(12, 10, 24, 0.72);
+  border: 1px solid var(--color-divider);
+  border-radius: 0.3rem;
+  background: var(--color-editor-background);
   overflow: hidden;
 `
 
-const RowStripe = styled.div<{ accent: boolean }>`
+const RowStripe = styled.div`
   position: absolute;
   right: 0;
   left: 0;
   height: ${ROW_HEIGHT}px;
-  background: ${({ accent }) =>
-    accent ? "rgba(167, 139, 250, 0.08)" : "transparent"};
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  background: var(--color-piano-lane-white);
+  border-top: 1px solid var(--color-piano-lane-edge);
   pointer-events: none;
+
+  &[data-accent="true"] {
+    background: var(--color-piano-lane-highlighted);
+  }
 `
 
-const StepLine = styled.div<{ strong: boolean; beat: boolean }>`
+const StepLine = styled.div`
   position: absolute;
   top: 0;
   bottom: 0;
   width: 1px;
-  background: ${({ strong, beat }) =>
-    strong
-      ? "rgba(167, 139, 250, 0.45)"
-      : beat
-        ? "rgba(255, 255, 255, 0.14)"
-        : "rgba(255, 255, 255, 0.05)"};
+  background: var(--color-editor-grid-secondary);
   pointer-events: none;
+
+  &[data-beat="true"] {
+    background: var(--color-editor-grid);
+  }
+
+  &[data-strong="true"] {
+    background: var(--color-divider);
+  }
 `
 
 const Inactive = styled.div`
@@ -80,32 +88,30 @@ const Inactive = styled.div`
   bottom: 0;
   background: repeating-linear-gradient(
     -45deg,
-    rgba(255, 255, 255, 0.05),
-    rgba(255, 255, 255, 0.05) 6px,
+    var(--color-highlight),
+    var(--color-highlight) 6px,
     transparent 6px,
     transparent 12px
   );
   pointer-events: none;
 `
 
-const NoteBlock = styled.div<{
-  color: string
-  active: boolean
-  selected: boolean
-  dimmed: boolean
-}>`
+const NoteBlock = styled.div`
   position: absolute;
   height: ${ROW_HEIGHT - 5}px;
-  border: 1px solid
-    ${({ selected, color }) => (selected ? "#ffffff" : color)};
-  border-radius: 7px;
-  background: ${({ color, active }) => (active ? color : `${color}59`)};
-  box-shadow: ${({ selected, color }) =>
-    selected ? `0 0 0 2px rgba(255,255,255,0.55), 0 0 16px ${color}` : "none"};
-  opacity: ${({ dimmed }) => (dimmed ? 0.32 : 1)};
-  cursor: ${({ active }) => (active ? "grab" : "default")};
+  border: 1px solid;
+  border-radius: 0.2rem;
+  box-sizing: border-box;
+  cursor: default;
   touch-action: none;
-  transition: box-shadow 0.1s ease;
+
+  &[data-active="true"] {
+    cursor: grab;
+  }
+
+  &[data-selected="true"] {
+    border-color: var(--color-text);
+  }
 `
 
 const NoteShape = styled.svg`
@@ -117,42 +123,42 @@ const NoteShape = styled.svg`
   overflow: visible;
 `
 
-const LaneRow = styled.div<{ active: boolean }>`
+const LaneRow = styled.div`
   position: relative;
   height: ${LANE_HEIGHT}px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  background: ${({ active }) =>
-    active ? "rgba(167, 139, 250, 0.1)" : "transparent"};
+  border-top: 1px solid var(--color-piano-lane-edge);
+  background: var(--color-piano-lane-black);
+
+  &[data-active="true"] {
+    background: var(--color-piano-lane-highlighted);
+  }
 `
 
-const LaneLabel = styled.div<{ color: string }>`
+const LaneLabel = styled.div`
   position: absolute;
   top: 50%;
-  left: -8px;
+  left: 0.25rem;
   z-index: 3;
   display: flex;
-  gap: 6px;
+  gap: 0.25rem;
   align-items: center;
-  padding: 2px 8px;
-  border-radius: 999px;
-  color: ${({ color }) => color};
-  background: rgba(12, 10, 24, 0.9);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.2rem;
+  background: var(--color-background);
+  font-size: 0.65rem;
+  font-weight: 600;
   white-space: nowrap;
   pointer-events: none;
   transform: translateY(-50%);
 `
 
-const Hit = styled.div<{ color: string; active: boolean; dimmed: boolean }>`
+const Hit = styled.div`
   position: absolute;
   top: 5px;
   height: ${LANE_HEIGHT - 10}px;
-  border: 1px solid ${({ color }) => color};
-  border-radius: 6px;
-  background: ${({ color, active }) => (active ? color : `${color}55`)};
-  opacity: ${({ dimmed }) => (dimmed ? 0.32 : 1)};
+  border: 1px solid;
+  border-radius: 0.2rem;
+  box-sizing: border-box;
   cursor: pointer;
   touch-action: none;
 `
@@ -162,8 +168,7 @@ const Playhead = styled.div`
   top: 0;
   bottom: 0;
   width: 2px;
-  background: #f0abfc;
-  box-shadow: 0 0 12px #f0abfc;
+  background: var(--color-theme);
   pointer-events: none;
 `
 
@@ -172,8 +177,8 @@ const EndMarker = styled.div`
   top: 0;
   bottom: 0;
   z-index: 4;
-  width: 14px;
-  margin-left: -6px;
+  width: 0.75rem;
+  margin-left: -0.375rem;
   cursor: ew-resize;
   touch-action: none;
 
@@ -181,42 +186,44 @@ const EndMarker = styled.div`
     position: absolute;
     top: 0;
     bottom: 0;
-    left: 6px;
+    left: 0.375rem;
     width: 2px;
-    background: #a78bfa;
-    box-shadow: 0 0 10px rgba(167, 139, 250, 0.8);
+    background: var(--color-text-secondary);
     content: "";
   }
 `
 
 const EndFlag = styled.div`
   position: absolute;
-  top: 2px;
-  left: 10px;
-  padding: 2px 7px;
-  border-radius: 6px;
-  color: #1b1230;
-  background: #a78bfa;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
+  top: 0.1rem;
+  left: 0.6rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.2rem;
+  color: var(--color-on-surface);
+  background: var(--color-text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
   white-space: nowrap;
 `
 
 const PitchLabels = styled.div`
   position: absolute;
   top: 0;
-  left: 6px;
+  left: 0.25rem;
   z-index: 2;
   pointer-events: none;
 `
 
-const PitchLabel = styled.div<{ accent: boolean }>`
+const PitchLabel = styled.div`
   height: ${ROW_HEIGHT}px;
-  color: ${({ accent }) => (accent ? "#c4b5fd" : "rgba(255,255,255,0.28)")};
-  font-size: 9px;
-  font-family: ui-monospace, Menlo, monospace;
+  color: var(--color-text-tertiary);
+  font-size: 0.6rem;
+  font-family: var(--font-mono);
   line-height: ${ROW_HEIGHT}px;
+
+  &[data-accent="true"] {
+    color: var(--color-text-secondary);
+  }
 `
 
 const NOTE_NAMES = [
@@ -296,6 +303,7 @@ export const PatternCanvas: FC<PatternCanvasProps> = ({
   onSetLength,
   onSelectLayer,
 }) => {
+  const localized = useLocalization()
   const step = gridTicks(pattern)
   const steps = stepCount(pattern)
   const overhangSteps = useMemo(() => {
@@ -525,11 +533,16 @@ export const PatternCanvas: FC<PatternCanvasProps> = ({
     return (
       <NoteBlock
         key={note.id}
-        color={layer.color}
-        active={isActive}
-        selected={isActive && note.id === selectedNoteId}
-        dimmed={note.startTick >= pattern.lengthTicks}
-        style={{ left, top, width: noteWidth }}
+        data-active={isActive}
+        data-selected={isActive && note.id === selectedNoteId}
+        style={{
+          left,
+          top,
+          width: noteWidth,
+          borderColor: layer.color,
+          background: isActive ? layer.color : `${layer.color}59`,
+          opacity: note.startTick >= pattern.lengthTicks ? 0.32 : 1,
+        }}
         onPointerDown={(e) => handleNotePointerDown(e, layer, note)}
         onDoubleClick={(e) => {
           e.stopPropagation()
@@ -544,7 +557,7 @@ export const PatternCanvas: FC<PatternCanvasProps> = ({
             <polyline
               points={curvePoints(note)}
               fill="none"
-              stroke="rgba(255,255,255,0.75)"
+              stroke="var(--color-on-surface)"
               strokeWidth="4"
               vectorEffect="non-scaling-stroke"
             />
@@ -559,7 +572,7 @@ export const PatternCanvas: FC<PatternCanvasProps> = ({
       <Sheet>
         <Grid
           ref={gridRef}
-          aria-label="Pattern-Canvas"
+          aria-label={localized["pattern-canvas"]}
           style={{ width, height: gridHeight }}
           onPointerDown={handleGridPointerDown}
           onPointerMove={(e) => {
@@ -574,7 +587,7 @@ export const PatternCanvas: FC<PatternCanvasProps> = ({
             return (
               <RowStripe
                 key={pitch}
-                accent={((pitch % 12) + 12) % 12 === 0}
+                data-accent={((pitch % 12) + 12) % 12 === 0}
                 style={{ top: i * ROW_HEIGHT }}
               />
             )
@@ -583,8 +596,10 @@ export const PatternCanvas: FC<PatternCanvasProps> = ({
           {Array.from({ length: totalSteps + 1 }, (_, i) => (
             <StepLine
               key={i}
-              strong={i % (pattern.gridDivision / 4 || 4) === 0 && i % 4 === 0}
-              beat={i % 4 === 0}
+              data-strong={
+                i % (pattern.gridDivision / 4 || 4) === 0 && i % 4 === 0
+              }
+              data-beat={i % 4 === 0}
               style={{ left: i * stepWidth }}
             />
           ))}
@@ -620,9 +635,9 @@ export const PatternCanvas: FC<PatternCanvasProps> = ({
             onPointerCancel={() => {
               endDragRef.current = false
             }}
-            title="Pattern-Ende verschieben"
+            title={localized["pattern-end-marker"]}
           >
-            <EndFlag>ENDE · {steps}</EndFlag>
+            <EndFlag>{steps}</EndFlag>
           </EndMarker>
 
           <PitchLabels>
@@ -630,7 +645,7 @@ export const PatternCanvas: FC<PatternCanvasProps> = ({
               const pitch = basePitch + visibleRows - 1 - i
               const isC = ((pitch % 12) + 12) % 12 === 0
               return (
-                <PitchLabel key={pitch} accent={isC}>
+                <PitchLabel key={pitch} data-accent={isC}>
                   {isC ? pitchName(pitch) : ""}
                 </PitchLabel>
               )
@@ -639,25 +654,31 @@ export const PatternCanvas: FC<PatternCanvasProps> = ({
         </Grid>
 
         {laneLayers.length > 0 && (
-          <Grid style={{ width, marginTop: 10 }}>
+          <Grid style={{ width, marginTop: "0.5rem" }}>
             {laneLayers
               .filter((layer) => layer.visible || layer.id === activeLayerId)
               .map((layer) => (
                 <LaneRow
                   key={layer.id}
-                  active={layer.id === activeLayerId}
+                  data-active={layer.id === activeLayerId}
                   onPointerDown={(e) => handleLanePointerDown(e, layer)}
                 >
-                  <LaneLabel color={layer.color}>{layer.name}</LaneLabel>
+                  <LaneLabel style={{ color: layer.color }}>
+                    {layer.name}
+                  </LaneLabel>
                   {layer.notes.map((note) => (
                     <Hit
                       key={note.id}
-                      color={layer.color}
-                      active={layer.id === activeLayerId}
-                      dimmed={note.startTick >= pattern.lengthTicks}
                       style={{
                         left: (note.startTick / step) * stepWidth + 1,
                         width: Math.max(10, stepWidth - 4),
+                        borderColor: layer.color,
+                        background:
+                          layer.id === activeLayerId
+                            ? layer.color
+                            : `${layer.color}55`,
+                        opacity:
+                          note.startTick >= pattern.lengthTicks ? 0.32 : 1,
                       }}
                       title={layer.name}
                     />

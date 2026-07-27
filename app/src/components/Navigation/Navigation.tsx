@@ -1,5 +1,6 @@
 import styled from "@emotion/styled"
 import Camera from "mdi-react/CameraIcon"
+import ChartTimeline from "mdi-react/ChartTimelineVariantIcon"
 import Forum from "mdi-react/ForumIcon"
 import Help from "mdi-react/HelpCircleIcon"
 import Music from "mdi-react/MusicIcon"
@@ -127,6 +128,14 @@ export const Navigation: FC = () => {
     [setPath],
   )
 
+  const onClickToneMapTab = useCallback(
+    (e: MouseEvent) => {
+      e.preventDefault()
+      setPath("/tonemap")
+    },
+    [setPath],
+  )
+
   const onClickScanTab = useCallback(
     (e: MouseEvent) => {
       e.preventDefault()
@@ -213,33 +222,54 @@ export const Navigation: FC = () => {
         </Tab>
       </Tooltip>
 
-      <Tooltip title="MUSE Jam Room" delayDuration={500}>
+      <Tooltip title={<Localized name="jam-room" />} delayDuration={500}>
         <Tab
           className={path === "/jam" ? "active" : undefined}
           onMouseDown={onClickJamTab}
         >
           <Music style={IconStyle} />
-          <TabTitle>Jam Room</TabTitle>
+          <TabTitle>
+            <Localized name="jam-room" />
+          </TabTitle>
         </Tab>
       </Tooltip>
 
-      <Tooltip title="MUSE Pattern-Editor" delayDuration={500}>
+      <Tooltip title={<Localized name="patterns" />} delayDuration={500}>
         <Tab
           className={path === "/jam-grid" ? "active" : undefined}
           onMouseDown={onClickGridTab}
         >
           <PianoIcon style={IconStyle} viewBox="0 0 128 128" />
-          <TabTitle>Patterns</TabTitle>
+          <TabTitle>
+            <Localized name="patterns" />
+          </TabTitle>
         </Tab>
       </Tooltip>
 
-      <Tooltip title="MUSE Camera Sequencer" delayDuration={500}>
+      <Tooltip
+        title={<Localized name="camera-sequencer" />}
+        delayDuration={500}
+      >
         <Tab
           className={path === "/jam-scan" ? "active" : undefined}
           onMouseDown={onClickScanTab}
         >
           <Camera style={IconStyle} />
-          <TabTitle>Camera</TabTitle>
+          <TabTitle>
+            <Localized name="camera-sequencer" />
+          </TabTitle>
+        </Tab>
+      </Tooltip>
+
+      <Tooltip title={<Localized name="tonemap-title" />} delayDuration={500}>
+        <Tab
+          className={path === "/tonemap" ? "active" : undefined}
+          onMouseDown={onClickToneMapTab}
+        >
+          <ChartTimeline style={IconStyle} />
+          <TabTitle>
+            <Localized name="tonemap-title" />
+          </TabTitle>
         </Tab>
       </Tooltip>
 

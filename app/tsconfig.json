@@ -23,6 +23,11 @@
     "alwaysStrict": true,
     "useDefineForClassFields": true,
     "resolveJsonModule": true,
+    // Vite does the emitting; tsc only type-checks. This lets the app import
+    // packages whose sources use explicit .ts specifiers (tonemap-core runs
+    // its CLI through node --experimental-strip-types, which requires them).
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
