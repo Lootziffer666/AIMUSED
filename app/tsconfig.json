@@ -11,7 +11,9 @@
     ],
     "sourceMap": true,
     "target": "esnext",
-    "module": "es2015",
+    // Vite emits; esnext is what it actually produces, and it is what allows
+    // the lazy dynamic imports the tone map packages use.
+    "module": "esnext",
     "esModuleInterop": true,
     "jsx": "react-jsx",
     "jsxImportSource": "@emotion/react",

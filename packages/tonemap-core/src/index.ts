@@ -7,7 +7,13 @@
  */
 
 export * from "./alignment/alignment.ts"
+// `audio/codecs.ts` is deliberately NOT re-exported: it dynamically imports
+// the MP3 and Vorbis WASM decoders, which no browser build should ever pull
+// in. Import it directly (or use the package's "./codecs" entry) when a
+// headless host needs the lossy formats.
 export * from "./audio/features.ts"
+export * from "./audio/flac.ts"
+export * from "./audio/flacEncode.ts"
 export * from "./audio/pcm.ts"
 export * from "./audio/synthetic.ts"
 export * from "./libraries/manifest.ts"
@@ -43,6 +49,7 @@ export {
 export * from "./pairing/pairedSource.ts"
 export * from "./pairing/privateAssets.ts"
 export * from "./ranking/featureLayout.ts"
+export * from "./ranking/onnxSession.ts"
 export * from "./ranking/ranker.ts"
 export * from "./schema/tonemap.ts"
 export * from "./schema/validate.ts"

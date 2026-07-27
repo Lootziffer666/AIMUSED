@@ -69,9 +69,11 @@ Signal is a web-based music sequencer built with React and TypeScript, with cros
 
 - `@signal-app/core` - Core sequencer entities and song/track/event model
 - `@signal-app/tonemap-core` - ToneMap IR, lossless MIDI event graph,
-  deterministic audio analysis, MIDI/audio alignment, motif graph,
-  non-destructive orchestration plans and patch ranking
-  (see `docs/tonemap/architecture.md`); node-only, no DOM, not required by the app build
+  deterministic audio analysis (native WAV and FLAC decoders; MP3/Ogg Vorbis
+  behind the lazily loaded `@signal-app/tonemap-core/codecs` entry),
+  MIDI/audio alignment, motif graph, non-destructive orchestration plans,
+  patch ranking and an optional ONNX Runtime binding
+  (see `docs/tonemap/architecture.md`); no DOM, used by the Tone Map workspace
 - `@signal-app/player` - Audio playback engine with SoundFont synthesis
 - `dialog-hooks` - React hooks for modal dialogs
 

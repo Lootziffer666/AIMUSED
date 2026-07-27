@@ -260,8 +260,8 @@ describe("ONNX adapter", () => {
     expect(result[0].patchId).toBe("x")
   })
 
-  it("uses the session scores when one is injected", () => {
-    const ranker = new OnnxPatchRanker({ session: () => [0.1, 0.99] })
+  it("uses a synchronous session's scores", () => {
+    const ranker = new OnnxPatchRanker({ syncSession: () => [0.1, 0.99] })
     const result = ranker.rank({}, [
       library([patch({ id: "a" }), patch({ id: "b" })]),
     ])

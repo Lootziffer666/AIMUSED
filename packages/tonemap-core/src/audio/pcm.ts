@@ -4,9 +4,12 @@
  * Analysis always runs on a single, boring representation: float samples per
  * channel. Decoding is behind an interface so a host that has ffmpeg, the Web
  * Audio API or a native decoder can register one without the analysis code
- * changing. The only decoder shipped here is WAV, because it is the one
- * format we can decode correctly without pulling in a binary dependency.
+ * changing. WAV and FLAC are decoded natively here – both are lossless, so
+ * there is exactly one correct answer and no codec to get subtly wrong. The
+ * lossy formats live in `codecs.ts` behind a lazy import.
  */
+
+import { flacDecoder } from "./flac.ts"
 
 export interface PcmBuffer {
   sampleRate: number
@@ -255,6 +258,7 @@ export function encodeWav(
 export function createDefaultDecoderRegistry(): DecoderRegistry {
   const registry = new DecoderRegistry()
   registry.register(wavDecoder)
+  registry.register(flacDecoder)
   return registry
 }
 

@@ -52,13 +52,15 @@ describe("WAV decoding", () => {
 
   it("explains clearly which formats have no decoder", () => {
     const registry = createDefaultDecoderRegistry()
+    // lossless formats decode natively, lossy ones have to be registered
     expect(registry.supports("wav")).toBe(true)
-    expect(registry.supports("flac")).toBe(false)
-    expect(() => registry.decode("flac", new Uint8Array())).toThrow(
+    expect(registry.supports("flac")).toBe(true)
+    expect(registry.supports("mp3")).toBe(false)
+    expect(() => registry.decode("mp3", new Uint8Array())).toThrow(
       AudioDecodeError,
     )
     try {
-      registry.decode("flac", new Uint8Array())
+      registry.decode("mp3", new Uint8Array())
     } catch (error) {
       expect((error as Error).message).toContain("no decoder registered")
       expect((error as Error).message).toContain("wav")
