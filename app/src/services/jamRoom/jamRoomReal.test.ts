@@ -214,9 +214,10 @@ describe("Input mapping", () => {
     expect(buildScaleNotes(9, "minor", 3, 3)[0]).toBe(57) // A3
   })
 
-  it("handles mic errors without crashing", () => {
-    expect(handleMicError({ name: "NotAllowedError" })).toContain("verweigert")
-    expect(handleMicError(null)).toContain("Mikrofonfehler")
+  it("names a localization key for every mic error", () => {
+    expect(handleMicError({ name: "NotAllowedError" })).toBe("mic-denied")
+    expect(handleMicError({ name: "NotFoundError" })).toBe("mic-not-found")
+    expect(handleMicError(null)).toBe("mic-error")
   })
 })
 

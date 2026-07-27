@@ -17,7 +17,7 @@ import type {
 } from "../../entities/performance/MusePerformanceTake"
 import { useRouter } from "../../hooks/useRouter"
 import { useStores } from "../../hooks/useStores"
-import { Localized } from "../../localize/useLocalization"
+import { Localized, useLocalization } from "../../localize/useLocalization"
 import { applyJamRoomTakeToSong } from "../../services/jamRoom/jamRoomSongAdapter"
 import {
   handleCameraError,
@@ -160,6 +160,7 @@ const C_MAJOR = [0, 2, 4, 5, 7, 9, 11]
 export const ScanSequencer: FC = () => {
   const { songStore, player, synthGroup } = useStores()
   const theme = useTheme()
+  const localized = useLocalization()
   const { setPath } = useRouter()
   const toast = useToast()
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -228,7 +229,7 @@ export const ScanSequencer: FC = () => {
         }
         setCameraReady(true)
       } catch (error) {
-        setNotice(handleCameraError(error))
+        setNotice(localized[handleCameraError(error) as "camera-error"])
       }
     }
 

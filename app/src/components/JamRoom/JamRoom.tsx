@@ -570,7 +570,7 @@ export const JamRoom: FC = () => {
         camStreamRef.current = stream
         if (videoRef.current) videoRef.current.srcObject = stream
       } catch (e) {
-        setCameraError(handleCameraError(e))
+        setCameraError(localized[handleCameraError(e) as "camera-error"])
       }
     }
     void setup()
@@ -657,7 +657,13 @@ export const JamRoom: FC = () => {
       (det.root !== musicKey.root || det.mode !== musicKey.mode)
     ) {
       setMusicKey({ root: det.root, mode: det.mode, manual: false })
-      toast.info(`Tonart erkannt: ${keyName(det.root, det.mode)}`)
+      toast.info(
+        `${localized["jam-key-detected"]}: ${keyName(det.root)} ${
+          det.mode === "major"
+            ? localized["scale-major"]
+            : localized["scale-minor"]
+        }`,
+      )
     }
   }, [takes, musicKey, toast])
 
@@ -746,9 +752,9 @@ export const JamRoom: FC = () => {
         tracker.addFrame(f)
       }
       setIsRecordingVoice(true)
-      toast.success("Aufnahme läuft – sing oder summ in den Loop.")
+      toast.success(localized["jam-recording"])
     } catch (e) {
-      toast.error(handleMicError(e))
+      toast.error(localized[handleMicError(e) as "mic-error"])
     }
   }, [LOOP_TICKS, drawTrail, engine, ensureScheduler, toast])
 
@@ -1115,7 +1121,7 @@ export const JamRoom: FC = () => {
     setTakes((prev) => {
       const next = undoLastTake(prev)
       if (next.length === prev.length)
-        toast.info("Nichts zum Rückgängigmachen.")
+        toast.info(localized["jam-nothing-to-undo"])
       return next
     })
   }, [toast])

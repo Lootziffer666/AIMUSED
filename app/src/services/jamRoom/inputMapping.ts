@@ -56,14 +56,16 @@ export function noteName(midi: number): string {
   return `${NOTE_NAMES[pc]}${octave}`
 }
 
-export function keyName(root: number, mode: "major" | "minor"): string {
-  return `${NOTE_NAMES[((root % 12) + 12) % 12]} ${mode === "major" ? "dur" : "moll"}`
+/** Root note only; the mode is a localization key the caller resolves. */
+export function keyName(root: number): string {
+  return NOTE_NAMES[((root % 12) + 12) % 12]
 }
 
+/** Returns a localization key, see `handleCameraError`. */
 export function handleMicError(error: unknown): string {
   const e = error as { name?: string }
-  if (!e || !e.name) return "Mikrofonfehler – Jam läuft ohne Stimme weiter."
-  if (e.name === "NotAllowedError") return "Mikrofonzugriff verweigert."
-  if (e.name === "NotFoundError") return "Kein Mikrofon gefunden."
-  return "Mikrofonfehler – Jam läuft ohne Stimme weiter."
+  if (!e || !e.name) return "mic-error"
+  if (e.name === "NotAllowedError") return "mic-denied"
+  if (e.name === "NotFoundError") return "mic-not-found"
+  return "mic-error"
 }

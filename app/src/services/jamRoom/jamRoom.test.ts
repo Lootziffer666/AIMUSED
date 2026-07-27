@@ -40,9 +40,7 @@ describe("Jam Room logic", () => {
           { tick: -3, duration: 0, noteNumber: 200, velocity: 100 },
           { tick: 10.4, duration: 40.6, noteNumber: 60.2, velocity: 140 },
         ],
-        drumHits: [
-          { tick: 4.4, zoneId: "kick", velocity: 200, confidence: 2 },
-        ],
+        drumHits: [{ tick: 4.4, zoneId: "kick", velocity: 200, confidence: 2 }],
         confidence: 1.5,
       }),
     )
@@ -80,8 +78,7 @@ describe("Jam Room logic", () => {
     expect(snapToScale(71, 0, [0, 2, 4, 5, 7, 9, 11])).toBe(71)
     expect(snapToScale(73, 0, [0, 2, 4, 5, 7, 9, 11])).toBe(72)
     expect(
-      generateKeyBoundNotes([61], 0, [0, 2, 4, 5, 7, 9, 11])[0]
-        .noteNumber,
+      generateKeyBoundNotes([61], 0, [0, 2, 4, 5, 7, 9, 11])[0].noteNumber,
     ).toBe(60)
   })
 
@@ -131,13 +128,13 @@ describe("Jam Room logic", () => {
     ])
   })
 
-  it("handles camera failures without throwing", () => {
-    expect(handleCameraError(new DOMException("", "NotAllowedError"))).toContain(
-      "verweigert",
+  it("names a localization key for every camera failure", () => {
+    expect(handleCameraError(new DOMException("", "NotAllowedError"))).toBe(
+      "camera-denied",
     )
-    expect(handleCameraError(new DOMException("", "NotFoundError"))).toContain(
-      "Keine Kamera",
+    expect(handleCameraError(new DOMException("", "NotFoundError"))).toBe(
+      "camera-not-found",
     )
-    expect(handleCameraError(new Error("boom"))).toContain("ohne Video")
+    expect(handleCameraError(new Error("boom"))).toBe("camera-error")
   })
 })
