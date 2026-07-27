@@ -214,7 +214,40 @@ sie neu. `rank` bleibt synchron und liefert bewusst das heuristische Ergebnis.
 Fällt das Modell aus, wird nicht geworfen – die heuristische Reihenfolge bleibt
 und jeder Kandidat trägt `model unavailable: <Grund>` in seinen Begründungen.
 
-Es wird bewusst **kein** Modell mittrainiert oder mitgeliefert.
+### Das Referenzmodell
+
+`fixtures/tonemap/synthetic/reranker-v1.onnx` (3,6 kB) erfüllt genau diesen
+Vertrag: Eingänge `features` und `mask` als `float32 [1, 97]`, Ausgang `scores`
+als `float32 [1, 8]`. Erzeugt wird es reproduzierbar von
+`fixtures/tonemap/synthetic/make-reranker.py` (fester Seed).
+
+Es ist **untrainiert** – die Gewichte sind eine feste Zufallsprojektion. Es
+beweist, dass die Verdrahtung stimmt, nicht dass es musikalisch urteilt. Ein
+Modell mit Urteilsvermögen kommt nur mit Trainingsdaten, und die entstehen aus
+den Entscheidungen im Orchestrierungs-Vergleich.
+
+Die ONNX Runtime ist **keine** Abhängigkeit dieses Pakets: 130 MB soll niemand
+laden müssen, nur um die Tests laufen zu lassen. `onnxRuntime.test.ts` läuft
+gegen die echte Runtime und das echte Modell und überspringt sich sonst
+sichtbar:
+
+```
+npm i -D onnxruntime-web -w @signal-app/tonemap-core
+npm test -w @signal-app/tonemap-core
+```
+
+`onnxSession.test.ts` deckt dieselben Codepfade gegen eine injizierte
+Fake-Runtime ab und läuft immer.
+
+### Grenze des aktuellen Vertrags
+
+Das Modell sieht die **Anfrage**, nicht die Kandidaten. Es kann also lernen
+„bei dieser Art Stimme nimm eher Position 2 der heuristischen Liste" – eine
+schwache Umsortierung mit Positions-Prior, mehr nicht. Ein echter Re-Ranker
+bräuchte Merkmale **pro Kandidat**; das wäre Feature-Layout v2 und damit eine
+neue Layout-Version, keine stille Änderung dieser.
+
+Es wird bewusst **kein trainiertes** Modell mitgeliefert.
 
 ## Rendering
 
