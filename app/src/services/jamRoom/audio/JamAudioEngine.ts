@@ -12,6 +12,12 @@ export type SynthNotePlayer = (
 
 export type SynthKind = "lead" | "bass" | "pad" | "arp"
 
+/** Normalized gain curve point: t and v both run from 0 to 1 */
+export interface GainShapePoint {
+  t: number
+  v: number
+}
+
 export const ROLE_CHANNEL: Record<string, number> = {
   melody: 0,
   guitar: 3,
@@ -216,12 +222,44 @@ export class JamAudioEngine {
 
   // ---- Melodic synth voices ----
 
+  // Shapes a voice's gain: plain attack/release without a shape, or the
+  // event's normalized envelope sampled onto the AudioParam timeline.
+  private applyGainEnvelope(
+    env: GainNode,
+    t: number,
+    durSec: number,
+    peak: number,
+    attack: number,
+    release: number,
+    shape?: GainShapePoint[],
+  ) {
+    const stopAt = t + durSec
+    if (!shape || shape.length < 2) {
+      env.gain.setValueAtTime(0.0001, t)
+      env.gain.linearRampToValueAtTime(peak, t + attack)
+      env.gain.setTargetAtTime(0.0001, stopAt, release)
+      return
+    }
+    const level = (v: number) =>
+      Math.max(0.0001, peak * Math.min(1, Math.max(0, v)))
+    env.gain.setValueAtTime(level(shape[0].v), t)
+    for (const point of shape.slice(1)) {
+      env.gain.linearRampToValueAtTime(
+        level(point.v),
+        t + Math.min(1, Math.max(0, point.t)) * durSec,
+      )
+    }
+    env.gain.setTargetAtTime(0.0001, stopAt, release)
+  }
+
   playSynthNoteAt(
     time: number,
     noteNumber: number,
     velocity: number,
     durSec: number,
     kind: SynthKind,
+    /** Optional normalized gain shape ({t, v} in 0..1) applied over the note */
+    shape?: GainShapePoint[],
   ) {
     const ctx = this.ensureContext()
     const t = Math.max(time, ctx.currentTime + 0.001)
@@ -249,9 +287,7 @@ export class JamAudioEngine {
       o1.connect(lp)
       o2.connect(o2g).connect(lp)
       lp.connect(env)
-      env.gain.setValueAtTime(0.0001, t)
-      env.gain.linearRampToValueAtTime(v * 0.85, t + 0.012)
-      env.gain.setTargetAtTime(0.0001, stopAt, 0.06)
+      this.applyGainEnvelope(env, t, durSec, v * 0.85, 0.012, 0.06, shape)
       o1.start(t)
       o2.start(t)
       o1.stop(stopAt + 0.3)
@@ -270,9 +306,7 @@ export class JamAudioEngine {
         o.start(t)
         o.stop(stopAt + 1.2)
       }
-      env.gain.setValueAtTime(0.0001, t)
-      env.gain.linearRampToValueAtTime(v * 0.3, t + 0.35)
-      env.gain.setTargetAtTime(0.0001, stopAt, 0.25)
+      this.applyGainEnvelope(env, t, durSec, v * 0.3, 0.35, 0.25, shape)
     } else if (kind === "arp") {
       const o = ctx.createOscillator()
       o.type = "square"
@@ -281,9 +315,7 @@ export class JamAudioEngine {
       lp.type = "lowpass"
       lp.frequency.value = 2200
       o.connect(lp).connect(env)
-      env.gain.setValueAtTime(0.0001, t)
-      env.gain.linearRampToValueAtTime(v * 0.4, t + 0.004)
-      env.gain.setTargetAtTime(0.0001, stopAt, 0.04)
+      this.applyGainEnvelope(env, t, durSec, v * 0.4, 0.004, 0.04, shape)
       o.start(t)
       o.stop(stopAt + 0.25)
     } else {
@@ -296,9 +328,7 @@ export class JamAudioEngine {
       lp.frequency.setValueAtTime(3200, t)
       lp.frequency.exponentialRampToValueAtTime(1400, t + Math.min(durSec, 0.4))
       o.connect(lp).connect(env)
-      env.gain.setValueAtTime(0.0001, t)
-      env.gain.linearRampToValueAtTime(v * 0.5, t + 0.006)
-      env.gain.setTargetAtTime(0.0001, stopAt, 0.05)
+      this.applyGainEnvelope(env, t, durSec, v * 0.5, 0.006, 0.05, shape)
       o.start(t)
       o.stop(stopAt + 0.3)
     }

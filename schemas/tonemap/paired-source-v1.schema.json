@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://muse.local/schemas/tonemap/paired-source-v1.schema.json",
+  "title": "MUSE paired source manifest",
+  "description": "References one MIDI file and the recording it belongs to. Only the manifest is committed; the referenced files stay local.",
+  "type": "object",
+  "required": ["schemaVersion", "id", "midi", "rights"],
+  "properties": {
+    "schemaVersion": { "const": "muse.paired-source.v1" },
+    "id": { "type": "string", "minLength": 1 },
+    "title": { "type": "string" },
+    "midi": {
+      "type": "object",
+      "required": ["path"],
+      "properties": {
+        "path": { "type": "string" },
+        "sha256": { "type": "string" },
+        "origin": { "enum": ["hand-reconstructed", "original-export", "transcription", "unknown"] }
+      }
+    },
+    "audio": {
+      "type": "object",
+      "required": ["path", "format"],
+      "properties": {
+        "path": { "type": "string" },
+        "format": { "enum": ["wav", "flac", "mp3", "ogg", "opus"] },
+        "sampleRate": { "type": "integer" },
+        "channels": { "type": "integer" },
+        "durationSeconds": { "type": "number" },
+        "sha256": { "type": "string" }
+      }
+    },
+    "relationship": {
+      "type": "object",
+      "properties": {
+        "sameArrangement": { "type": "boolean" },
+        "sameTempo": { "type": "boolean" },
+        "sameLength": { "type": "boolean" },
+        "knownOffsetMs": { "type": ["number", "null"] }
+      }
+    },
+    "rights": {
+      "type": "object",
+      "required": ["analysisAllowedLocally"],
+      "properties": {
+        "publiclyRedistributable": { "type": "boolean" },
+        "analysisAllowedLocally": { "type": "boolean" },
+        "note": { "type": "string" }
+      }
+    },
+    "createdAt": { "type": "string" }
+  }
+}

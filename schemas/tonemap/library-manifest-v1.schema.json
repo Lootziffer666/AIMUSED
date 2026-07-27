@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://muse.local/schemas/tonemap/library-manifest-v1.schema.json",
+  "title": "MUSE instrument library manifest",
+  "description": "Describes a locally installed sample library. Sample data is never committed; rootPath is machine specific.",
+  "type": "object",
+  "required": ["schemaVersion", "id", "name", "patches"],
+  "properties": {
+    "schemaVersion": { "const": "muse.library-manifest.v1" },
+    "id": { "type": "string", "minLength": 1 },
+    "name": { "type": "string" },
+    "version": { "type": "string" },
+    "rootPath": { "type": ["string", "null"] },
+    "license": { "type": "string" },
+    "homepage": { "type": "string" },
+    "patches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "displayName", "family", "instrument", "range", "articulation"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "displayName": { "type": "string" },
+          "family": { "enum": ["strings", "woodwinds", "brass", "percussion", "keys", "plucked", "choir", "synth", "folk", "other"] },
+          "instrument": { "type": "string" },
+          "range": {
+            "type": "object",
+            "required": ["lowMidi", "highMidi"],
+            "properties": {
+              "lowMidi": { "type": "integer", "minimum": 0, "maximum": 127 },
+              "highMidi": { "type": "integer", "minimum": 0, "maximum": 127 },
+              "preferredLowMidi": { "type": "integer" },
+              "preferredHighMidi": { "type": "integer" }
+            }
+          },
+          "articulation": { "type": "string" },
+          "dynamics": { "type": "array", "items": { "type": "string" } },
+          "velocityLayers": { "type": "integer" },
+          "roundRobins": { "type": "integer" },
+          "timbre": { "type": "object", "additionalProperties": { "type": "number" } },
+          "sfzPath": { "type": "string" },
+          "soundFontPreset": {
+            "type": "object",
+            "properties": { "bank": { "type": "integer" }, "program": { "type": "integer" } }
+          },
+          "keyswitches": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["articulation", "noteNumber"],
+              "properties": { "articulation": { "type": "string" }, "noteNumber": { "type": "integer" } }
+            }
+          },
+          "controllers": { "type": "object", "additionalProperties": { "type": "number" } },
+          "supportedSampleRates": { "type": "array", "items": { "type": "integer" } },
+          "knownLimitations": { "type": "array", "items": { "type": "string" } },
+          "fallbackPatchIds": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

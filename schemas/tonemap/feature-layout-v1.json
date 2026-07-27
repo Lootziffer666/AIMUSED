@@ -1,0 +1,589 @@
+{
+  "version": "muse.feature-layout.v1",
+  "length": 97,
+  "description": "Stable field order for the later small ONNX ranking model. Values are normalized to 0..1 using min/max; a companion mask array marks which fields were known. New fields go into a new layout version, never into the middle of this one.",
+  "fields": [
+    {
+      "name": "function.primary-melody",
+      "min": 0,
+      "max": 1,
+      "description": "one-hot: musical function is primary-melody"
+    },
+    {
+      "name": "function.counter-melody",
+      "min": 0,
+      "max": 1,
+      "description": "one-hot: musical function is counter-melody"
+    },
+    {
+      "name": "function.bass",
+      "min": 0,
+      "max": 1,
+      "description": "one-hot: musical function is bass"
+    },
+    {
+      "name": "function.harmony",
+      "min": 0,
+      "max": 1,
+      "description": "one-hot: musical function is harmony"
+    },
+    {
+      "name": "function.pulse",
+      "min": 0,
+      "max": 1,
+      "description": "one-hot: musical function is pulse"
+    },
+    {
+      "name": "function.ostinato",
+      "min": 0,
+      "max": 1,
+      "description": "one-hot: musical function is ostinato"
+    },
+    {
+      "name": "function.texture",
+      "min": 0,
+      "max": 1,
+      "description": "one-hot: musical function is texture"
+    },
+    {
+      "name": "function.accent",
+      "min": 0,
+      "max": 1,
+      "description": "one-hot: musical function is accent"
+    },
+    {
+      "name": "function.transition",
+      "min": 0,
+      "max": 1,
+      "description": "one-hot: musical function is transition"
+    },
+    {
+      "name": "function.drone",
+      "min": 0,
+      "max": 1,
+      "description": "one-hot: musical function is drone"
+    },
+    {
+      "name": "function.percussion",
+      "min": 0,
+      "max": 1,
+      "description": "one-hot: musical function is percussion"
+    },
+    {
+      "name": "function.effect",
+      "min": 0,
+      "max": 1,
+      "description": "one-hot: musical function is effect"
+    },
+    {
+      "name": "function.unknown",
+      "min": 0,
+      "max": 1,
+      "description": "one-hot: musical function is unknown"
+    },
+    {
+      "name": "register.lowest",
+      "min": 0,
+      "max": 127,
+      "description": "lowest MIDI note"
+    },
+    {
+      "name": "register.highest",
+      "min": 0,
+      "max": 127,
+      "description": "highest MIDI note"
+    },
+    {
+      "name": "register.centroid",
+      "min": 0,
+      "max": 127,
+      "description": "duration weighted centre"
+    },
+    {
+      "name": "register.span",
+      "min": 0,
+      "max": 88,
+      "description": "highest minus lowest"
+    },
+    {
+      "name": "symbolic.noteCount",
+      "min": 0,
+      "max": 512,
+      "description": "notes in the segment"
+    },
+    {
+      "name": "symbolic.density",
+      "min": 0,
+      "max": 16,
+      "description": "notes per beat"
+    },
+    {
+      "name": "symbolic.meanDuration",
+      "min": 0,
+      "max": 3840,
+      "description": "mean sounding length in ticks"
+    },
+    {
+      "name": "symbolic.pitchRange",
+      "min": 0,
+      "max": 88,
+      "description": "pitch range in semitones"
+    },
+    {
+      "name": "symbolic.meanInterval",
+      "min": 0,
+      "max": 24,
+      "description": "mean absolute interval"
+    },
+    {
+      "name": "symbolic.polyphony",
+      "min": 1,
+      "max": 8,
+      "description": "simultaneous notes"
+    },
+    {
+      "name": "symbolic.monophonic",
+      "min": 0,
+      "max": 1,
+      "description": "1 when the voice is monophonic"
+    },
+    {
+      "name": "symbolic.syncopation",
+      "min": 0,
+      "max": 1,
+      "description": "share of off-beat onsets"
+    },
+    {
+      "name": "symbolic.restRatio",
+      "min": 0,
+      "max": 1,
+      "description": "share of silence"
+    },
+    {
+      "name": "symbolic.repetition",
+      "min": 0,
+      "max": 1,
+      "description": "share of repeated pitches"
+    },
+    {
+      "name": "symbolic.velocityMean",
+      "min": 0,
+      "max": 127,
+      "description": "mean velocity"
+    },
+    {
+      "name": "symbolic.velocityVariance",
+      "min": 0,
+      "max": 4096,
+      "description": "velocity variance"
+    },
+    {
+      "name": "symbolic.sustainPedal",
+      "min": 0,
+      "max": 1,
+      "description": "share of pedal-down events"
+    },
+    {
+      "name": "symbolic.legato",
+      "min": 0,
+      "max": 1,
+      "description": "share of connected notes"
+    },
+    {
+      "name": "acoustic.rms",
+      "min": 0,
+      "max": 1,
+      "description": "mean RMS"
+    },
+    {
+      "name": "acoustic.peak",
+      "min": 0,
+      "max": 1,
+      "description": "peak sample"
+    },
+    {
+      "name": "acoustic.loudnessDb",
+      "min": -80,
+      "max": 0,
+      "description": "mean loudness in dBFS"
+    },
+    {
+      "name": "acoustic.centroid",
+      "min": 0,
+      "max": 12000,
+      "description": "spectral centroid in Hz"
+    },
+    {
+      "name": "acoustic.bandwidth",
+      "min": 0,
+      "max": 12000,
+      "description": "spectral bandwidth in Hz"
+    },
+    {
+      "name": "acoustic.rolloff",
+      "min": 0,
+      "max": 20000,
+      "description": "85 % roll-off in Hz"
+    },
+    {
+      "name": "acoustic.flatness",
+      "min": 0,
+      "max": 1,
+      "description": "spectral flatness"
+    },
+    {
+      "name": "acoustic.zcr",
+      "min": 0,
+      "max": 1,
+      "description": "zero crossing rate"
+    },
+    {
+      "name": "acoustic.onset",
+      "min": 0,
+      "max": 1,
+      "description": "mean onset strength"
+    },
+    {
+      "name": "acoustic.transient",
+      "min": 0,
+      "max": 1,
+      "description": "attack energy share"
+    },
+    {
+      "name": "acoustic.sustain",
+      "min": 0,
+      "max": 1,
+      "description": "sustained energy share"
+    },
+    {
+      "name": "acoustic.low",
+      "min": 0,
+      "max": 1,
+      "description": "energy below 250 Hz"
+    },
+    {
+      "name": "acoustic.mid",
+      "min": 0,
+      "max": 1,
+      "description": "energy 250 Hz .. 4 kHz"
+    },
+    {
+      "name": "acoustic.high",
+      "min": 0,
+      "max": 1,
+      "description": "energy above 4 kHz"
+    },
+    {
+      "name": "acoustic.stereoWidth",
+      "min": 0,
+      "max": 1,
+      "description": "side/mid ratio"
+    },
+    {
+      "name": "acoustic.balance",
+      "min": -1,
+      "max": 1,
+      "description": "left/right balance"
+    },
+    {
+      "name": "acoustic.silenceRatio",
+      "min": 0,
+      "max": 1,
+      "description": "share of silent frames"
+    },
+    {
+      "name": "acoustic.chroma0",
+      "min": 0,
+      "max": 1,
+      "description": "pitch class energy 0"
+    },
+    {
+      "name": "acoustic.chroma1",
+      "min": 0,
+      "max": 1,
+      "description": "pitch class energy 1"
+    },
+    {
+      "name": "acoustic.chroma2",
+      "min": 0,
+      "max": 1,
+      "description": "pitch class energy 2"
+    },
+    {
+      "name": "acoustic.chroma3",
+      "min": 0,
+      "max": 1,
+      "description": "pitch class energy 3"
+    },
+    {
+      "name": "acoustic.chroma4",
+      "min": 0,
+      "max": 1,
+      "description": "pitch class energy 4"
+    },
+    {
+      "name": "acoustic.chroma5",
+      "min": 0,
+      "max": 1,
+      "description": "pitch class energy 5"
+    },
+    {
+      "name": "acoustic.chroma6",
+      "min": 0,
+      "max": 1,
+      "description": "pitch class energy 6"
+    },
+    {
+      "name": "acoustic.chroma7",
+      "min": 0,
+      "max": 1,
+      "description": "pitch class energy 7"
+    },
+    {
+      "name": "acoustic.chroma8",
+      "min": 0,
+      "max": 1,
+      "description": "pitch class energy 8"
+    },
+    {
+      "name": "acoustic.chroma9",
+      "min": 0,
+      "max": 1,
+      "description": "pitch class energy 9"
+    },
+    {
+      "name": "acoustic.chroma10",
+      "min": 0,
+      "max": 1,
+      "description": "pitch class energy 10"
+    },
+    {
+      "name": "acoustic.chroma11",
+      "min": 0,
+      "max": 1,
+      "description": "pitch class energy 11"
+    },
+    {
+      "name": "timbre.brightness",
+      "min": 0,
+      "max": 1,
+      "description": "requested timbre axis brightness"
+    },
+    {
+      "name": "timbre.warmth",
+      "min": 0,
+      "max": 1,
+      "description": "requested timbre axis warmth"
+    },
+    {
+      "name": "timbre.softness",
+      "min": 0,
+      "max": 1,
+      "description": "requested timbre axis softness"
+    },
+    {
+      "name": "timbre.roughness",
+      "min": 0,
+      "max": 1,
+      "description": "requested timbre axis roughness"
+    },
+    {
+      "name": "timbre.metallic",
+      "min": 0,
+      "max": 1,
+      "description": "requested timbre axis metallic"
+    },
+    {
+      "name": "timbre.airy",
+      "min": 0,
+      "max": 1,
+      "description": "requested timbre axis airy"
+    },
+    {
+      "name": "timbre.woody",
+      "min": 0,
+      "max": 1,
+      "description": "requested timbre axis woody"
+    },
+    {
+      "name": "timbre.breathy",
+      "min": 0,
+      "max": 1,
+      "description": "requested timbre axis breathy"
+    },
+    {
+      "name": "timbre.density",
+      "min": 0,
+      "max": 1,
+      "description": "requested timbre axis density"
+    },
+    {
+      "name": "timbre.attackSharpness",
+      "min": 0,
+      "max": 1,
+      "description": "requested timbre axis attackSharpness"
+    },
+    {
+      "name": "timbre.sustain",
+      "min": 0,
+      "max": 1,
+      "description": "requested timbre axis sustain"
+    },
+    {
+      "name": "timbre.decay",
+      "min": 0,
+      "max": 1,
+      "description": "requested timbre axis decay"
+    },
+    {
+      "name": "timbre.movement",
+      "min": 0,
+      "max": 1,
+      "description": "requested timbre axis movement"
+    },
+    {
+      "name": "timbre.intimacy",
+      "min": 0,
+      "max": 1,
+      "description": "requested timbre axis intimacy"
+    },
+    {
+      "name": "timbre.stereoWidth",
+      "min": 0,
+      "max": 1,
+      "description": "requested timbre axis stereoWidth"
+    },
+    {
+      "name": "timbre.reverberance",
+      "min": 0,
+      "max": 1,
+      "description": "requested timbre axis reverberance"
+    },
+    {
+      "name": "timbre.presence",
+      "min": 0,
+      "max": 1,
+      "description": "requested timbre axis presence"
+    },
+    {
+      "name": "timbre.weight",
+      "min": 0,
+      "max": 1,
+      "description": "requested timbre axis weight"
+    },
+    {
+      "name": "timbre.tension",
+      "min": 0,
+      "max": 1,
+      "description": "requested timbre axis tension"
+    },
+    {
+      "name": "emotion.valence",
+      "min": 0,
+      "max": 1,
+      "description": "requested emotional axis valence"
+    },
+    {
+      "name": "emotion.arousal",
+      "min": 0,
+      "max": 1,
+      "description": "requested emotional axis arousal"
+    },
+    {
+      "name": "emotion.dominance",
+      "min": 0,
+      "max": 1,
+      "description": "requested emotional axis dominance"
+    },
+    {
+      "name": "emotion.tension",
+      "min": 0,
+      "max": 1,
+      "description": "requested emotional axis tension"
+    },
+    {
+      "name": "emotion.vulnerability",
+      "min": 0,
+      "max": 1,
+      "description": "requested emotional axis vulnerability"
+    },
+    {
+      "name": "emotion.dignity",
+      "min": 0,
+      "max": 1,
+      "description": "requested emotional axis dignity"
+    },
+    {
+      "name": "emotion.menace",
+      "min": 0,
+      "max": 1,
+      "description": "requested emotional axis menace"
+    },
+    {
+      "name": "emotion.wonder",
+      "min": 0,
+      "max": 1,
+      "description": "requested emotional axis wonder"
+    },
+    {
+      "name": "emotion.comedy",
+      "min": 0,
+      "max": 1,
+      "description": "requested emotional axis comedy"
+    },
+    {
+      "name": "emotion.heroism",
+      "min": 0,
+      "max": 1,
+      "description": "requested emotional axis heroism"
+    },
+    {
+      "name": "emotion.intimacy",
+      "min": 0,
+      "max": 1,
+      "description": "requested emotional axis intimacy"
+    },
+    {
+      "name": "emotion.urgency",
+      "min": 0,
+      "max": 1,
+      "description": "requested emotional axis urgency"
+    },
+    {
+      "name": "emotion.melancholy",
+      "min": 0,
+      "max": 1,
+      "description": "requested emotional axis melancholy"
+    },
+    {
+      "name": "emotion.absurdity",
+      "min": 0,
+      "max": 1,
+      "description": "requested emotional axis absurdity"
+    },
+    {
+      "name": "context.prominence",
+      "min": 0,
+      "max": 1,
+      "description": "requested prominence"
+    },
+    {
+      "name": "context.alignmentConfidence",
+      "min": 0,
+      "max": 1,
+      "description": "confidence of the alignment"
+    },
+    {
+      "name": "context.sectionPosition",
+      "min": 0,
+      "max": 1,
+      "description": "relative position inside the piece"
+    },
+    {
+      "name": "context.voiceCount",
+      "min": 1,
+      "max": 32,
+      "description": "voices sounding at the same time"
+    }
+  ]
+}

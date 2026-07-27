@@ -49,3 +49,13 @@ dist
 
 # JetBrains data
 .idea
+
+# MUSE ToneMap: private reference material and derived caches.
+# Reference recordings and hand-reconstructed MIDI are never committed —
+# only manifests, schemas, code and synthetic fixtures are.
+private-assets/*
+!private-assets/README.md
+reference-audio/
+reference-midi/
+analysis-cache/
+render-cache/
