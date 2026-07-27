@@ -95,9 +95,14 @@ async function loadMetronomeSoundFontData() {
       "./assets/soundfonts/A320U_drums.sf2",
     )
   }
-  const soundFontURL =
-    "https://cdn.jsdelivr.net/gh/ryohey/signal@6959f35/public/A320U_drums.sf2"
-  const response = await fetch(soundFontURL)
-  const data = await response.arrayBuffer()
-  return data
+  // Bundled with the build; the CDN is only the fallback for a deployment
+  // that did not copy the asset, so a self-hosted MUSE works offline.
+  const local = new URL("soundfonts/A320U_drums.sf2", document.baseURI).href
+  const response = await fetch(local)
+  if (response.ok) return await response.arrayBuffer()
+
+  const fallback = await fetch(
+    "https://cdn.jsdelivr.net/gh/ryohey/signal@6959f35/public/A320U_drums.sf2",
+  )
+  return await fallback.arrayBuffer()
 }

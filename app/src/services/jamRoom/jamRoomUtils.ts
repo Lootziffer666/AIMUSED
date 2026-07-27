@@ -1,3 +1,7 @@
+import {
+  MediaUnavailableError,
+  mediaUnavailableKey,
+} from "../../helpers/secureContext"
 import type {
   MusePerformanceNote,
   MusePerformanceTake,
@@ -179,6 +183,9 @@ export function protectOriginalTakes(
  * business deciding which language the user reads.
  */
 export function handleCameraError(error: unknown): string {
+  if (error instanceof MediaUnavailableError) {
+    return mediaUnavailableKey(error.reason)
+  }
   if (!(error instanceof DOMException)) return "camera-error"
   if (error.name === "NotAllowedError") return "camera-denied"
   if (error.name === "NotFoundError") return "camera-not-found"
@@ -186,6 +193,9 @@ export function handleCameraError(error: unknown): string {
 }
 
 export function handleMicrophoneError(error: unknown): string {
+  if (error instanceof MediaUnavailableError) {
+    return mediaUnavailableKey(error.reason)
+  }
   if (!(error instanceof DOMException)) return "mic-error"
   if (error.name === "NotAllowedError") return "mic-denied"
   if (error.name === "NotFoundError") return "mic-not-found"

@@ -1,3 +1,7 @@
+import {
+  MediaUnavailableError,
+  mediaUnavailableKey,
+} from "../../helpers/secureContext"
 export const MAJOR_INTERVALS = [0, 2, 4, 5, 7, 9, 11]
 export const MINOR_INTERVALS = [0, 2, 3, 5, 7, 8, 10]
 
@@ -63,6 +67,9 @@ export function keyName(root: number): string {
 
 /** Returns a localization key, see `handleCameraError`. */
 export function handleMicError(error: unknown): string {
+  if (error instanceof MediaUnavailableError) {
+    return mediaUnavailableKey(error.reason)
+  }
   const e = error as { name?: string }
   if (!e || !e.name) return "mic-error"
   if (e.name === "NotAllowedError") return "mic-denied"

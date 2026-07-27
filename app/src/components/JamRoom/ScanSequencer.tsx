@@ -15,6 +15,10 @@ import type {
   MusePerformanceNote,
   MusePerformanceTake,
 } from "../../entities/performance/MusePerformanceTake"
+import {
+  checkMediaAvailability,
+  MediaUnavailableError,
+} from "../../helpers/secureContext"
 import { useRouter } from "../../hooks/useRouter"
 import { useStores } from "../../hooks/useStores"
 import { Localized, useLocalization } from "../../localize/useLocalization"
@@ -210,6 +214,10 @@ export const ScanSequencer: FC = () => {
 
     const setupCamera = async () => {
       try {
+        const availability = checkMediaAvailability()
+        if (!availability.available) {
+          throw new MediaUnavailableError(availability.reason)
+        }
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: { ideal: "environment" },

@@ -20,6 +20,10 @@ import type {
   MusePerformanceTake,
   MuseTrackRole,
 } from "../../entities/performance/MusePerformanceTake"
+import {
+  checkMediaAvailability,
+  MediaUnavailableError,
+} from "../../helpers/secureContext"
 import { useRouter } from "../../hooks/useRouter"
 import { useStores } from "../../hooks/useStores"
 import { Localized, useLocalization } from "../../localize/useLocalization"
@@ -152,6 +156,10 @@ const TopBar = styled.div`
   align-items: center;
   padding: 0.5rem 1rem;
   min-height: 3rem;
+
+  @media (max-width: 700px) {
+    padding: 0.5rem;
+  }
   box-sizing: border-box;
   background: var(--color-background);
   border-bottom: 1px solid var(--color-divider);
@@ -192,12 +200,27 @@ const MainArea = styled.div`
   flex: 1;
   min-height: 0;
   padding-bottom: 4rem;
+
+  /* Portrait phone: the theremin becomes a strip above the stage instead of
+     eating half the width, and the bottom bar takes real space rather than
+     floating over the zones. */
+  @media (max-width: 700px) {
+    flex-direction: column;
+    padding-bottom: 0;
+  }
 `
 const ThereminField = styled.div`
   position: relative;
   width: 26%;
   min-width: 12rem;
   margin: 0.5rem;
+  flex-shrink: 0;
+
+  @media (max-width: 700px) {
+    width: auto;
+    min-width: 0;
+    height: 7rem;
+  }
   overflow: hidden;
   border: 1px solid var(--color-divider);
   border-radius: 0.5rem;
@@ -243,8 +266,9 @@ const CenterStage = styled.div`
 const Zone = styled.div`
   position: absolute;
   display: flex;
-  width: 8rem;
-  height: 8rem;
+  /* big enough for a child's finger, small enough for three side by side */
+  width: min(8rem, 27vw);
+  height: min(8rem, 27vw);
   align-items: center;
   justify-content: center;
   border: 2px dashed;
@@ -281,12 +305,17 @@ const RingWrap = styled.div`
   top: 46%;
   left: 50%;
   display: flex;
-  width: 11rem;
-  height: 11rem;
+  width: min(11rem, 34vw);
+  height: min(11rem, 34vw);
   align-items: center;
   justify-content: center;
   pointer-events: none;
   transform: translate(-50%, -50%);
+
+  /* portrait puts the zones lower, so the ring moves out of their way */
+  @media (max-width: 700px) {
+    top: 30%;
+  }
 `
 const RingCenter = styled.div`
   position: absolute;
@@ -317,6 +346,10 @@ const LayersShelf = styled.div`
   left: 0.75rem;
   display: flex;
   max-width: 16rem;
+
+  @media (max-width: 700px) {
+    max-width: 45vw;
+  }
   flex-direction: column;
   gap: 0.25rem;
 `
@@ -359,6 +392,12 @@ const BottomBar = styled.div`
   box-sizing: border-box;
   background: var(--color-background);
   border-top: 1px solid var(--color-divider);
+
+  @media (max-width: 700px) {
+    position: static;
+    justify-content: center;
+    padding: 0.5rem;
+  }
 `
 const RecButton = styled.button`
   display: flex;
@@ -386,13 +425,19 @@ const RecButton = styled.button`
 const Hint = styled.div`
   position: absolute;
   bottom: 4.5rem;
+  max-width: 90vw;
+  white-space: normal;
+  text-align: center;
   left: 50%;
   z-index: 18;
   color: var(--color-text-secondary);
   font-size: 0.75rem;
-  white-space: nowrap;
   pointer-events: none;
   transform: translateX(-50%);
+
+  @media (max-width: 700px) {
+    bottom: 0.5rem;
+  }
 `
 
 // ---------- config ----------
@@ -555,6 +600,10 @@ export const JamRoom: FC = () => {
     let cancelled = false
     const setup = async () => {
       try {
+        const availability = checkMediaAvailability()
+        if (!availability.available) {
+          throw new MediaUnavailableError(availability.reason)
+        }
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: "user",

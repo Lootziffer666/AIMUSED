@@ -1,15 +1,15 @@
 import {
-  type MuseAnalysisResult,
-  type MuseArrangementPlan,
-  createId,
-} from "@signal-app/orchestration-core"
-import {
   applyCommand,
-  saveProjectToIdb,
   type MuseCommand,
   type MuseCommandLogEntry,
   type MuseMidiProject,
+  saveProjectToIdb,
 } from "@signal-app/midi-project"
+import {
+  createId,
+  type MuseAnalysisResult,
+  type MuseArrangementPlan,
+} from "@signal-app/orchestration-core"
 import { action, makeObservable, observable, reaction } from "mobx"
 import type { AppliedOrchestrationTrack } from "../services/orchestration/orchestrationExport"
 import type { MuseTrackMapping } from "../services/orchestration/songAdapter"

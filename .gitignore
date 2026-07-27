@@ -59,3 +59,6 @@ reference-audio/
 reference-midi/
 analysis-cache/
 render-cache/
+
+# Copied from electron/assets at build time, not a second copy in git
+app/public/soundfonts/

@@ -25,6 +25,18 @@ const Container = styled.div`
   height: 3rem;
   flex-shrink: 0;
   -webkit-app-region: drag;
+
+  /* On a phone there is no room for every tab, so the bar scrolls instead of
+     hiding the ones at the end – Jam Room and Patterns are exactly the tabs
+     that were unreachable before. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
   padding: ${() => {
     if (isRunningInElectron()) {
       const platform = getPlatform()
@@ -41,7 +53,8 @@ const Container = styled.div`
 export const Tab = styled.div`
   display: flex;
   flex-direction: row;
-  align-items: center; 
+  align-items: center;
+  flex-shrink: 0;
   padding: 0.5rem 1rem;
   font-size: 0.75rem;
   border-top: solid 0.1rem transparent;
@@ -76,6 +89,12 @@ export const TabTitle = styled.span`
 
 const FlexibleSpacer = styled.div`
   flex-grow: 1;
+  flex-shrink: 0;
+
+  /* nothing to push apart once the bar scrolls */
+  @media (max-width: 850px) {
+    flex-grow: 0;
+  }
 `
 
 export const IconStyle: CSSProperties = {

@@ -553,6 +553,9 @@ export default {
     "jam-key-detected": "Key detected",
     "jam-recording": "Recording – sing or hum into the loop.",
     "jam-nothing-to-undo": "Nothing to undo.",
+    "media-needs-https":
+      "Camera and microphone need HTTPS. Open MUSE over https:// or on the device itself.",
+    "media-unsupported": "This browser offers no camera or microphone access.",
   },
   fr: {
     "open-orchestration": "Orchestration…",
@@ -1112,6 +1115,10 @@ export default {
     "jam-key-detected": "Tonalité détectée",
     "jam-recording": "Enregistrement – chantez ou fredonnez dans la boucle.",
     "jam-nothing-to-undo": "Rien à annuler.",
+    "media-needs-https":
+      "La caméra et le microphone exigent HTTPS. Ouvrez MUSE en https:// ou sur l’appareil lui-même.",
+    "media-unsupported":
+      "Ce navigateur n’offre aucun accès à la caméra ou au microphone.",
   },
   ja: {
     "open-orchestration": "Orchestration…",
@@ -1664,6 +1671,10 @@ export default {
     "jam-key-detected": "キーを検出",
     "jam-recording": "録音中 – ループに歌うかハミングしてください。",
     "jam-nothing-to-undo": "元に戻す操作がありません。",
+    "media-needs-https":
+      "カメラとマイクには HTTPS が必要です。https:// で、または端末上で MUSE を開いてください。",
+    "media-unsupported":
+      "このブラウザはカメラとマイクへのアクセスを提供していません。",
   },
   "zh-Hans": {
     "open-orchestration": "Orchestration…",
@@ -2204,6 +2215,9 @@ export default {
     "jam-key-detected": "检测到调性",
     "jam-recording": "录音中 – 对着循环唱或哼。",
     "jam-nothing-to-undo": "没有可撤销的操作。",
+    "media-needs-https":
+      "摄像头与麦克风需要 HTTPS。请通过 https:// 或在本机上打开 MUSE。",
+    "media-unsupported": "此浏览器不提供摄像头或麦克风访问。",
   },
   "zh-Hant": {
     "open-orchestration": "Orchestration…",
@@ -2745,6 +2759,9 @@ export default {
     "jam-key-detected": "偵測到調性",
     "jam-recording": "錄音中 – 對著循環唱或哼。",
     "jam-nothing-to-undo": "沒有可復原的操作。",
+    "media-needs-https":
+      "攝影機與麥克風需要 HTTPS。請透過 https:// 或在本機上開啟 MUSE。",
+    "media-unsupported": "此瀏覽器不提供攝影機或麥克風存取。",
   },
   sk: {
     "open-orchestration": "Orchestration…",
@@ -3295,5 +3312,9 @@ export default {
     "jam-key-detected": "Zistená tónina",
     "jam-recording": "Nahráva sa – spievajte alebo hmkajte do slučky.",
     "jam-nothing-to-undo": "Nie je čo vrátiť.",
+    "media-needs-https":
+      "Kamera a mikrofón vyžadujú HTTPS. Otvorte MUSE cez https:// alebo priamo na zariadení.",
+    "media-unsupported":
+      "Tento prehliadač neponúka prístup ku kamere ani mikrofónu.",
   },
 } as const
