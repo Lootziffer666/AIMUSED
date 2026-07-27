@@ -235,6 +235,68 @@ describe("PatternEditor", () => {
     expect(saved?.trackLayers[0].notes).toHaveLength(1)
   })
 
+  it("opens a layer when the instrument changes and leaves the old one alone", async () => {
+    const user = userEvent.setup()
+    const store = new PatternStore()
+    let pattern = seedPattern(store)
+    pattern = addNote(pattern, pattern.trackLayers[0].id, {
+      startTick: 0,
+      noteNumber: 60,
+    }).pattern
+    store.save(pattern)
+    renderEditor(store, pattern.id)
+
+    await user.click(screen.getByRole("button", { name: "Grid" }))
+    fireEvent.change(screen.getByLabelText("Instrument"), {
+      target: { value: "melodic:24" },
+    })
+
+    const withGuitar = store.get(pattern.id)
+    expect(withGuitar?.trackLayers).toHaveLength(3)
+    expect(withGuitar?.trackLayers[2].name).toBe("Guitar")
+    // the note already played stays on the piano layer, unchanged
+    expect(withGuitar?.trackLayers[0].program).toBe(0)
+    expect(withGuitar?.trackLayers[0].notes).toHaveLength(1)
+
+    // going back to the piano returns to its layer instead of stacking another
+    fireEvent.change(screen.getByLabelText("Instrument"), {
+      target: { value: "melodic:0" },
+    })
+    expect(store.get(pattern.id)?.trackLayers).toHaveLength(3)
+  })
+
+  it("stacks melodic layers in one grid and hides one without losing it", async () => {
+    const user = userEvent.setup()
+    const store = new PatternStore()
+    let pattern = seedPattern(store)
+    pattern = addNote(pattern, pattern.trackLayers[0].id, {
+      startTick: 0,
+      noteNumber: 60,
+    }).pattern
+    pattern = addLayer(pattern, {
+      name: "Guitar",
+      kind: "melodic",
+      program: 24,
+    })
+    pattern = addNote(pattern, pattern.trackLayers[2].id, {
+      startTick: 0,
+      noteNumber: 60,
+    }).pattern
+    store.save(pattern)
+    renderEditor(store, pattern.id)
+
+    await user.click(screen.getByRole("button", { name: "Grid" }))
+
+    // both layers share the same cell instead of getting a block of rows each
+    expect(screen.getByLabelText("C4 1").childElementCount).toBe(2)
+
+    await user.click(screen.getByLabelText("Show or hide layer: Guitar"))
+    expect(screen.getByLabelText("C4 1").childElementCount).toBe(1)
+    // hidden, not deleted
+    expect(store.get(pattern.id)?.trackLayers[2].notes).toHaveLength(1)
+    expect(store.get(pattern.id)?.trackLayers[2].visible).toBe(false)
+  })
+
   it("exports to the song and does not duplicate tracks on repeated export", async () => {
     const user = userEvent.setup()
     const store = new PatternStore()

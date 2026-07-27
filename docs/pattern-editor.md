@@ -31,9 +31,15 @@ weder Layer-Stack noch Notenraster noch Kurven.
 - **Unabhängige Instrumentenebenen.** Jede Ebene hat Instrument bzw. Drum-Sound,
   Farbe, Sichtbarkeit, Mute, Solo und Lock. Mehrere Ebenen dürfen dieselbe
   Zeitposition belegen; innerhalb einer Ebene ist Polyphonie erlaubt.
+- **Instrumentenwechsel legt eine Ebene an.** Ein anderes Instrument
+  überschreibt nie das, was schon gespielt ist – es öffnet eine neue Ebene und
+  macht sie aktiv. Ein Instrument, das schon eine Ebene hat, führt zurück auf
+  diese Ebene, statt eine zweite leere anzulegen.
 - **Overlay.** Die aktive Ebene ist voll sichtbar und bearbeitbar, sichtbare
   Referenzebenen liegen transparent darunter, ausgeblendete verschwinden,
-  gesperrte bleiben sichtbar, nehmen aber keine Änderungen an.
+  gesperrte bleiben sichtbar, nehmen aber keine Änderungen an. Im Grid teilen
+  sich **alle** melodischen Ebenen ein Raster und liegen wirklich übereinander;
+  jede Ebene hat ihr eigenes Auge in der Ebenenleiste.
 - **Töne als Blöcke.** Antippen erzeugt eine Note in Rasterlänge, Ziehen nach
   rechts erzeugt direkt eine gehaltene Note, Ziehen des Blocks verschiebt ihn in
   Zeit und Tonhöhe, Ziehen der Kanten ändert Beginn oder Dauer. Doppelklick,

@@ -148,6 +148,27 @@ gibt also keinen falschen Ton. Die Erweiterungen bleiben erhalten: mehrere
 Instrumentenebenen, freie Pattern-Länge, gehaltene Töne, Hüllkurven pro
 Ereignis – die feineren davon über den **…**-Knopf und die Canvas-Ansicht.
 
+### Ebenen wie in Photoshop
+
+Über dem Raster liegt die Ebenenleiste: links das Instrument, rechts eine
+Marke je Ebene mit Auge und Farbe.
+
+- **Ein anderes Instrument legt eine neue Ebene an.** Was schon gespielt ist,
+  bleibt auf seiner Ebene und behält seinen Klang. Wer zum Klavier zurückgeht,
+  landet wieder auf der Klavierebene – es entsteht keine zweite leere.
+- **Alle melodischen Ebenen liegen übereinander**, in einem Raster: die Ebene,
+  auf der du gerade bist, ist voll deckend, die anderen scheinen durch. So
+  spielst du die zweite Stimme gegen die erste, die du noch siehst.
+- **Jede Ebene hat ihr eigenes Auge.** Ausblenden nimmt nichts weg – die Töne
+  bleiben gespeichert und klingen weiter; sie sind nur nicht im Weg. Eine
+  ausgeblendete Ebene, auf die du wieder etwas setzt, taucht von selbst wieder
+  auf, damit der neue Ton nicht ins Unsichtbare fällt.
+- **Antippen malt immer auf der aktiven Ebene**, auch dort, wo eine andere
+  Ebene schon einen Ton hat. Die Marke antippen wechselt die aktive Ebene.
+
+Trommeln bleiben eine Zeile pro Sound – sie haben keine Tonhöhe, überlagern
+sich also nicht.
+
 ## Bekannte Grenzen
 
 - **iOS**: Audio startet erst nach einer Berührung – das erste Antippen von

@@ -162,6 +162,74 @@ export function toggleLayerFlag(
   }))
 }
 
+/**
+ * A layer you are about to write to has to be on screen – otherwise the note
+ * lands somewhere invisible and the grid looks broken.
+ */
+export function ensureLayerVisible(
+  pattern: MusePattern,
+  layerId: string,
+): MusePattern {
+  const layer = pattern.trackLayers.find((l) => l.id === layerId)
+  if (!layer || layer.visible) return pattern
+  return mapLayer(pattern, layerId, (l) => ({ ...l, visible: true }))
+}
+
+export interface InstrumentSelection {
+  kind: MusePatternLayerKind
+  /** GM program for melodic selections */
+  program?: number
+  /** Drum zone for percussion selections */
+  drumZoneId?: string
+  name?: string
+}
+
+function matchesSelection(
+  layer: MusePatternTrackLayer,
+  selection: InstrumentSelection,
+): boolean {
+  if (layer.kind !== selection.kind) return false
+  return selection.kind === "melodic"
+    ? (layer.program ?? 0) === (selection.program ?? 0)
+    : (layer.drumZoneId ?? "") === (selection.drumZoneId ?? "")
+}
+
+/**
+ * Picking an instrument opens a layer – it never rewrites the one you are on.
+ *
+ * That is the Photoshop rule applied to sound: the notes you already played on
+ * the piano stay piano when you reach for the guitar. Picking an instrument
+ * that already has a layer returns to that layer instead of piling up a second
+ * empty one, so switching back and forth costs nothing.
+ */
+export function selectOrCreateInstrumentLayer(
+  pattern: MusePattern,
+  selection: InstrumentSelection,
+): { pattern: MusePattern; layerId: string; created: boolean } {
+  const existing = pattern.trackLayers.find((layer) =>
+    matchesSelection(layer, selection),
+  )
+  if (existing) {
+    return {
+      pattern: ensureLayerVisible(pattern, existing.id),
+      layerId: existing.id,
+      created: false,
+    }
+  }
+  const next = addLayer(pattern, {
+    kind: selection.kind,
+    name: selection.name,
+    program:
+      selection.kind === "melodic" ? (selection.program ?? 0) : undefined,
+    drumZoneId:
+      selection.kind === "melodic"
+        ? undefined
+        : (selection.drumZoneId ?? "kick"),
+  })
+  const layer = next.trackLayers[next.trackLayers.length - 1]
+  return { pattern: next, layerId: layer.id, created: true }
+}
+
 // ---------- notes ----------
 
 export interface AddNoteOptions {
