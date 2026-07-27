@@ -108,6 +108,46 @@ seinen eigenen Speicher, geteilt wird nichts.
 Die Navigationsleiste scrollt seitwärts, wenn die Tabs nicht nebeneinander
 passen.
 
+## Schlagzeug auf Papier
+
+Im Jam Room liest **„Scan paper kit"** ein gemaltes Schlagzeug aus einem
+Kamerabild ein.
+
+So funktioniert es: Ein gemaltes Becken ist eine **geschlossene Linie**.
+Interessant ist deshalb nicht die Tinte, sondern das **Loch, das sie
+umschließt**. MUSE flutet den Hintergrund vom Bildrand her; alles, was
+dabei nicht erreicht wird, ist von Tinte umgeben – also eine gemalte Fläche.
+Das trägt krumme Kreise, Ovale, Vierecke, was Kinder eben malen, und braucht
+kein Modell.
+
+Was hilft:
+
+- **Ganz zumalen.** Eine offene Linie umschließt nichts und wird ignoriert –
+  richtigerweise, sonst wäre jeder Kringel ein Becken.
+- Dunkler Stift auf hellem Papier. Ungleichmäßiges Licht ist eingeplant, die
+  Schwelle wird lokal berechnet.
+- **Rückkamera** einschalten (Knopf daneben). Das Papier liegt auf dem Tisch,
+  nicht vor dem Gesicht.
+- Größe entscheidet die Zuordnung: die größte Fläche wird Kick, dann Snare,
+  Hi-Hat, Tom, Clap.
+
+Danach ist jede gemalte Fläche eine Trommelzone in genau der Größe, in der sie
+gemalt wurde. Getroffen wird sie mit **Hände** (Handtracking) oder mit dem
+Finger auf dem Schirm.
+
+## Song Maker auf dem Handy
+
+Unter **Patterns** gibt es zwei Ansichten derselben Daten: **Grid** und
+**Canvas**. Auf einem Handy startet MUSE im Grid – das ist die
+Song-Maker-Oberfläche: Zeit nach rechts, Tonhöhe nach oben, antippen setzt
+einen Ton, nochmal antippen nimmt ihn weg, seitwärts ziehen hält ihn über
+mehrere Schritte.
+
+Das Raster ist tonleitergebunden (Grundton und Dur/Moll oben einstellbar), es
+gibt also keinen falschen Ton. Die Erweiterungen bleiben erhalten: mehrere
+Instrumentenebenen, freie Pattern-Länge, gehaltene Töne, Hüllkurven pro
+Ereignis – die feineren davon über den **…**-Knopf und die Canvas-Ansicht.
+
 ## Bekannte Grenzen
 
 - **iOS**: Audio startet erst nach einer Berührung – das erste Antippen von

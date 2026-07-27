@@ -62,6 +62,10 @@ import {
   undoLastTake,
   wrapTick,
 } from "../../services/jamRoom/takeOps"
+import {
+  detectPaperDrums,
+  drumsToZones,
+} from "../../services/jamRoom/vision/paperDrums"
 import { ToolbarButton } from "../Toolbar/ToolbarButton"
 import { Button, PrimaryButton } from "../ui/Button"
 import {
@@ -134,6 +138,13 @@ const CamVideo = styled.video`
   object-fit: cover;
   opacity: 0.18;
   transform: scaleX(-1);
+
+  /* The rear camera already shows the world the right way round; mirroring it
+     would put the drawn drums on the wrong side. */
+  &[data-facing="environment"] {
+    transform: none;
+    opacity: 0.32;
+  }
 `
 const CamNotice = styled.div`
   position: absolute;
@@ -448,6 +459,8 @@ interface DrumZoneState {
   color: string
   xPct: number
   yPct: number
+  /** Set when the zone came from a drawing – it keeps the size that was drawn */
+  radiusPct?: number
 }
 
 const INITIAL_ZONES: DrumZoneState[] = [
@@ -540,6 +553,12 @@ export const JamRoom: FC = () => {
     "off" | "loading" | "running" | "error"
   >("off")
   const [handsMsg, setHandsMsg] = useState<string | null>(null)
+  const [cameraReady, setCameraReady] = useState(false)
+  /**
+   * A drum kit drawn on paper lies on the table, so scanning it needs the rear
+   * camera. Hand tracking wants the front one, where you can see yourself.
+   */
+  const [facing, setFacing] = useState<"user" | "environment">("user")
 
   // ---- refs ----
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -606,7 +625,7 @@ export const JamRoom: FC = () => {
         }
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
-            facingMode: "user",
+            facingMode: facing,
             width: { ideal: 1280 },
             height: { ideal: 720 },
           },
@@ -618,16 +637,20 @@ export const JamRoom: FC = () => {
         }
         camStreamRef.current = stream
         if (videoRef.current) videoRef.current.srcObject = stream
+        setCameraError(null)
+        setCameraReady(true)
       } catch (e) {
+        setCameraReady(false)
         setCameraError(localized[handleCameraError(e) as "camera-error"])
       }
     }
     void setup()
     return () => {
       cancelled = true
+      setCameraReady(false)
       camStreamRef.current?.getTracks().forEach((t) => t.stop())
     }
-  }, [])
+  }, [facing, localized])
 
   // ---- audio hookup: share the app clock, route through the SoundFont ----
   useEffect(() => {
@@ -889,12 +912,24 @@ export const JamRoom: FC = () => {
       const stage = stageRef.current
       if (!stage) return null
       const r = stage.getBoundingClientRect()
+      // Nearest zone wins, so overlapping drawn shapes never fight over a hit
+      let best: DrumZoneState | null = null
+      let bestDistance = Number.POSITIVE_INFINITY
       for (const z of zonesRef.current) {
         const zx = (z.xPct / 100) * r.width
         const zy = (z.yPct / 100) * r.height
-        if (Math.hypot(xPx - zx, yPx - zy) <= ZONE_RADIUS_PX) return z
+        // a zone read off paper is as big as it was drawn
+        const radius =
+          z.radiusPct !== undefined
+            ? (z.radiusPct / 100) * r.width
+            : ZONE_RADIUS_PX
+        const distance = Math.hypot(xPx - zx, yPx - zy)
+        if (distance <= radius && distance < bestDistance) {
+          best = z
+          bestDistance = distance
+        }
       }
-      return null
+      return best
     },
     [],
   )
@@ -958,11 +993,60 @@ export const JamRoom: FC = () => {
   const addZone = useCallback(() => {
     const next = ADDABLE_ZONES.find((a) => !zones.some((z) => z.id === a.id))
     if (!next) {
-      toast.info("Mehr Zonen gibt es in dieser Version nicht.")
+      toast.info(localized["jam-no-more-zones"])
       return
     }
     setZones((prev) => [...prev, { ...next, xPct: 62, yPct: 38 }])
-  }, [zones, toast])
+  }, [zones, toast, localized])
+
+  /**
+   * Reads the drum kit off a sheet of paper.
+   *
+   * One camera frame, the shapes the ink encloses, and those become the zones.
+   * Nothing is detected continuously: a drawing does not move, and scanning
+   * once on request keeps the frame rate for the hands.
+   */
+  const scanPaperDrums = useCallback(() => {
+    const video = videoRef.current
+    if (!video || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+      toast.info(localized["jam-paper-no-camera"])
+      return
+    }
+    const width = Math.min(320, video.videoWidth)
+    if (width <= 0) {
+      toast.info(localized["jam-paper-no-camera"])
+      return
+    }
+    const height = Math.round((video.videoHeight / video.videoWidth) * width)
+    const canvas = document.createElement("canvas")
+    canvas.width = width
+    canvas.height = height
+    const context = canvas.getContext("2d", { willReadFrequently: true })
+    if (!context) return
+    context.drawImage(video, 0, 0, width, height)
+
+    const drums = detectPaperDrums(context.getImageData(0, 0, width, height))
+    if (drums.length === 0) {
+      toast.info(localized["jam-paper-nothing-found"])
+      return
+    }
+
+    const detected = drumsToZones(drums, { mirrored: facing === "user" })
+    setZones(
+      detected.map((zone, index) => ({
+        id: zone.id,
+        label: zone.label,
+        color:
+          INITIAL_ZONES[index]?.color ??
+          ADDABLE_ZONES[index - INITIAL_ZONES.length]?.color ??
+          theme.themeColor,
+        xPct: zone.xPct,
+        yPct: zone.yPct,
+        radiusPct: zone.radiusPct,
+      })),
+    )
+    toast.success(`${localized["jam-paper-found"]}: ${detected.length}`)
+  }, [facing, localized, theme.themeColor, toast])
 
   // ---- theremin (continuous pitch, scale-bound) ----
   const noteFromT = useCallback(
@@ -1219,7 +1303,13 @@ export const JamRoom: FC = () => {
 
   return (
     <Stage>
-      <CamVideo ref={videoRef} autoPlay muted playsInline />
+      <CamVideo
+        ref={videoRef}
+        data-facing={facing}
+        autoPlay
+        muted
+        playsInline
+      />
       <Beams />
       {cameraError && <CamNotice>{cameraError}</CamNotice>}
       {handsStatus === "loading" && (
@@ -1370,6 +1460,14 @@ export const JamRoom: FC = () => {
                 transform: "translate(-50%, -50%)",
                 borderColor: z.color,
                 background: flash[z.id] ? `${z.color}3d` : "transparent",
+                ...(z.radiusPct !== undefined
+                  ? {
+                      // the drawing decides how big the zone is
+                      width: `${z.radiusPct * 2}%`,
+                      height: `${z.radiusPct * 2}%`,
+                      aspectRatio: "1",
+                    }
+                  : {}),
               }}
               onPointerDown={(e) => {
                 e.stopPropagation()
@@ -1457,6 +1555,17 @@ export const JamRoom: FC = () => {
             <Localized name="jam-hands-swap" />
           </ToolbarButton>
         )}
+        <ToolbarButton
+          onMouseDown={() =>
+            setFacing((f) => (f === "user" ? "environment" : "user"))
+          }
+          selected={facing === "environment"}
+        >
+          <Localized name="jam-rear-camera" />
+        </ToolbarButton>
+        <Button onClick={scanPaperDrums} disabled={!cameraReady}>
+          <Localized name="jam-scan-paper" />
+        </Button>
         <Button onClick={addZone}>
           <Localized name="jam-add-zone" />
         </Button>

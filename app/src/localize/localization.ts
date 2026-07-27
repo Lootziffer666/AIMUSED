@@ -556,6 +556,17 @@ export default {
     "media-needs-https":
       "Camera and microphone need HTTPS. Open MUSE over https:// or on the device itself.",
     "media-unsupported": "This browser offers no camera or microphone access.",
+    "jam-scan-paper": "Scan paper kit",
+    "jam-rear-camera": "Rear camera",
+    "jam-paper-found": "Drums found",
+    "jam-paper-nothing-found":
+      "No closed shapes found. Draw the drums as fully closed outlines on bright paper.",
+    "jam-paper-no-camera": "The camera is not ready yet.",
+    "jam-no-more-zones": "No further zones in this version.",
+    "pattern-view-grid": "Grid",
+    "pattern-view-canvas": "Canvas",
+    "pattern-grid": "Song maker grid",
+    "pattern-more": "More",
   },
   fr: {
     "open-orchestration": "Orchestration…",
@@ -1119,6 +1130,17 @@ export default {
       "La caméra et le microphone exigent HTTPS. Ouvrez MUSE en https:// ou sur l’appareil lui-même.",
     "media-unsupported":
       "Ce navigateur n’offre aucun accès à la caméra ou au microphone.",
+    "jam-scan-paper": "Scanner la batterie dessinée",
+    "jam-rear-camera": "Caméra arrière",
+    "jam-paper-found": "Tambours trouvés",
+    "jam-paper-nothing-found":
+      "Aucune forme fermée trouvée. Dessinez les tambours comme des contours bien fermés sur du papier clair.",
+    "jam-paper-no-camera": "La caméra n’est pas encore prête.",
+    "jam-no-more-zones": "Pas d’autres zones dans cette version.",
+    "pattern-view-grid": "Grille",
+    "pattern-view-canvas": "Toile",
+    "pattern-grid": "Grille Song Maker",
+    "pattern-more": "Plus",
   },
   ja: {
     "open-orchestration": "Orchestration…",
@@ -1675,6 +1697,17 @@ export default {
       "カメラとマイクには HTTPS が必要です。https:// で、または端末上で MUSE を開いてください。",
     "media-unsupported":
       "このブラウザはカメラとマイクへのアクセスを提供していません。",
+    "jam-scan-paper": "紙のドラムを読み取る",
+    "jam-rear-camera": "背面カメラ",
+    "jam-paper-found": "ドラムを検出",
+    "jam-paper-nothing-found":
+      "閉じた形が見つかりません。明るい紙にドラムを閉じた輪郭として描いてください。",
+    "jam-paper-no-camera": "カメラの準備ができていません。",
+    "jam-no-more-zones": "このバージョンではこれ以上のゾーンはありません。",
+    "pattern-view-grid": "グリッド",
+    "pattern-view-canvas": "キャンバス",
+    "pattern-grid": "ソングメーカーのグリッド",
+    "pattern-more": "その他",
   },
   "zh-Hans": {
     "open-orchestration": "Orchestration…",
@@ -2218,6 +2251,17 @@ export default {
     "media-needs-https":
       "摄像头与麦克风需要 HTTPS。请通过 https:// 或在本机上打开 MUSE。",
     "media-unsupported": "此浏览器不提供摄像头或麦克风访问。",
+    "jam-scan-paper": "扫描纸上鼓组",
+    "jam-rear-camera": "后置摄像头",
+    "jam-paper-found": "找到鼓",
+    "jam-paper-nothing-found":
+      "未找到闭合形状。请在浅色纸上把鼓画成完全闭合的轮廓。",
+    "jam-paper-no-camera": "摄像头尚未就绪。",
+    "jam-no-more-zones": "此版本没有更多区域。",
+    "pattern-view-grid": "网格",
+    "pattern-view-canvas": "画布",
+    "pattern-grid": "Song Maker 网格",
+    "pattern-more": "更多",
   },
   "zh-Hant": {
     "open-orchestration": "Orchestration…",
@@ -2762,6 +2806,17 @@ export default {
     "media-needs-https":
       "攝影機與麥克風需要 HTTPS。請透過 https:// 或在本機上開啟 MUSE。",
     "media-unsupported": "此瀏覽器不提供攝影機或麥克風存取。",
+    "jam-scan-paper": "掃描紙上鼓組",
+    "jam-rear-camera": "後置攝影機",
+    "jam-paper-found": "找到鼓",
+    "jam-paper-nothing-found":
+      "未找到閉合形狀。請在淺色紙上把鼓畫成完全閉合的輪廓。",
+    "jam-paper-no-camera": "攝影機尚未就緒。",
+    "jam-no-more-zones": "此版本沒有更多區域。",
+    "pattern-view-grid": "網格",
+    "pattern-view-canvas": "畫布",
+    "pattern-grid": "Song Maker 網格",
+    "pattern-more": "更多",
   },
   sk: {
     "open-orchestration": "Orchestration…",
@@ -3316,5 +3371,16 @@ export default {
       "Kamera a mikrofón vyžadujú HTTPS. Otvorte MUSE cez https:// alebo priamo na zariadení.",
     "media-unsupported":
       "Tento prehliadač neponúka prístup ku kamere ani mikrofónu.",
+    "jam-scan-paper": "Naskenovať bicie z papiera",
+    "jam-rear-camera": "Zadná kamera",
+    "jam-paper-found": "Nájdené bicie",
+    "jam-paper-nothing-found":
+      "Nenašli sa uzavreté tvary. Nakreslite bicie ako úplne uzavreté obrysy na svetlý papier.",
+    "jam-paper-no-camera": "Kamera ešte nie je pripravená.",
+    "jam-no-more-zones": "V tejto verzii už nie sú ďalšie zóny.",
+    "pattern-view-grid": "Mriežka",
+    "pattern-view-canvas": "Plátno",
+    "pattern-grid": "Mriežka Song Maker",
+    "pattern-more": "Viac",
   },
 } as const

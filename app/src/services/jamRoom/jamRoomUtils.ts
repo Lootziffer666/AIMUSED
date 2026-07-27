@@ -1,13 +1,13 @@
-import {
-  MediaUnavailableError,
-  mediaUnavailableKey,
-} from "../../helpers/secureContext"
 import type {
   MusePerformanceNote,
   MusePerformanceTake,
   MuseTrackRole,
   PerformanceSource,
 } from "../../entities/performance/MusePerformanceTake"
+import {
+  MediaUnavailableError,
+  mediaUnavailableKey,
+} from "../../helpers/secureContext"
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value))

@@ -2,6 +2,7 @@ import styled from "@emotion/styled"
 import { getTempo } from "@signal-app/core"
 import { useToast } from "dialog-hooks"
 import ChevronLeft from "mdi-react/ChevronLeftIcon"
+import DotsHorizontal from "mdi-react/DotsHorizontalIcon"
 import Pause from "mdi-react/PauseIcon"
 import Play from "mdi-react/PlayIcon"
 import Redo from "mdi-react/RedoIcon"
@@ -75,6 +76,7 @@ import {
 import { EventDrawer } from "./EventDrawer"
 import { DRUM_ZONES, LayerRail, MELODIC_INSTRUMENTS } from "./LayerRail"
 import { type CanvasGesture, PatternCanvas } from "./PatternCanvas"
+import { SongMakerGrid } from "./SongMakerGrid"
 
 const Body = styled.div`
   display: flex;
@@ -103,7 +105,58 @@ const Notice = styled.div`
 const NameField = styled(InlineInput)`
   min-width: 8rem;
   max-width: 16rem;
+
+  @media (max-width: 700px) {
+    min-width: 5rem;
+    flex: 1;
+  }
 `
+
+/**
+ * Everything that is not needed to place a note.
+ *
+ * On a phone the toolbar was taller than the grid it belongs to, so the
+ * second rank of controls hides behind one button and the grid gets the
+ * screen back.
+ */
+const Secondary = styled.div`
+  display: contents;
+
+  @media (max-width: 700px) {
+    display: none;
+
+    &[data-open="true"] {
+      display: flex;
+      flex-basis: 100%;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+  }
+`
+
+const MoreButton = styled(ToolbarButton)`
+  display: none;
+
+  @media (max-width: 700px) {
+    display: flex;
+  }
+`
+
+const NOTE_NAMES = [
+  "C",
+  "C#",
+  "D",
+  "D#",
+  "E",
+  "F",
+  "F#",
+  "G",
+  "G#",
+  "A",
+  "A#",
+  "B",
+]
 
 const GRID_OPTIONS = [
   { value: 4, label: "1/4" },
@@ -147,6 +200,24 @@ export const PatternEditor: FC<PatternEditorProps> = ({
   const [isPlaying, setIsPlaying] = useState(false)
   const [playheadTick, setPlayheadTick] = useState<number | null>(null)
   const [loop, setLoop] = useState(true)
+  /**
+   * Two views of the same pattern: the Song-Maker grid, which works with a
+   * finger and is what most people recognise, and the canvas, which shows
+   * exact timing. A phone starts on the grid.
+   */
+  const [view, setView] = useState<"grid" | "canvas">(() =>
+    typeof window !== "undefined" && window.innerWidth < 900
+      ? "grid"
+      : "canvas",
+  )
+  const [moreOpen, setMoreOpen] = useState(false)
+  /**
+   * The grid is scale bound, like the original: every cell is a note that
+   * belongs, so there is no wrong one to hit. Editor state, not pattern data –
+   * the notes themselves stay plain MIDI numbers.
+   */
+  const [gridKey, setGridKey] = useState(0)
+  const [gridMode, setGridMode] = useState<"major" | "minor">("major")
 
   const playerRef = useRef<PatternPlayer | null>(null)
   const patternRef = useRef(pattern)
@@ -501,101 +572,151 @@ export const PatternEditor: FC<PatternEditorProps> = ({
           <Localized name="pattern-loop" />
         </ToolbarButton>
 
-        <FieldGroup>
-          <Localized name="pattern-steps" />
-          <NumberField
-            type="number"
-            min={1}
-            max={512}
-            value={steps}
-            onChange={(e) =>
-              commit(setPatternSteps(pattern, Number(e.target.value) || 1))
-            }
-            aria-label={localized["pattern-steps"]}
-          />
-        </FieldGroup>
+        <Secondary data-open={moreOpen}>
+          <FieldGroup>
+            <Localized name="pattern-steps" />
+            <NumberField
+              type="number"
+              min={1}
+              max={512}
+              value={steps}
+              onChange={(e) =>
+                commit(setPatternSteps(pattern, Number(e.target.value) || 1))
+              }
+              aria-label={localized["pattern-steps"]}
+            />
+          </FieldGroup>
 
-        <FieldGroup>
-          <Localized name="snap-to-grid" />
-          <InlineSelect
-            value={pattern.gridDivision}
-            onChange={(e) =>
-              commit(setGridDivision(pattern, Number(e.target.value)))
-            }
-            aria-label={localized["snap-to-grid"]}
+          {view === "grid" && (
+            <FieldGroup>
+              <Localized name="jam-key" />
+              <InlineSelect
+                value={gridKey}
+                onChange={(e) => setGridKey(Number(e.target.value))}
+                aria-label={localized["jam-key"]}
+              >
+                {NOTE_NAMES.map((name, index) => (
+                  <option key={name} value={index}>
+                    {name}
+                  </option>
+                ))}
+              </InlineSelect>
+              <InlineSelect
+                value={gridMode}
+                onChange={(e) =>
+                  setGridMode(e.target.value as "major" | "minor")
+                }
+                aria-label={localized["jam-mode"]}
+              >
+                <option value="major">{localized["scale-major"]}</option>
+                <option value="minor">{localized["scale-minor"]}</option>
+              </InlineSelect>
+            </FieldGroup>
+          )}
+
+          <FieldGroup>
+            <Localized name="snap-to-grid" />
+            <InlineSelect
+              value={pattern.gridDivision}
+              onChange={(e) =>
+                commit(setGridDivision(pattern, Number(e.target.value)))
+              }
+              aria-label={localized["snap-to-grid"]}
+            >
+              {GRID_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </InlineSelect>
+          </FieldGroup>
+
+          <FieldGroup as="div">
+            <Localized name="pattern-zoom" />
+            <ToolbarButtonGroup>
+              <ToolbarButtonGroupItem
+                onMouseDown={() => setStepWidth((w) => Math.max(16, w - 8))}
+                aria-label={localized["pattern-zoom-out"]}
+              >
+                −
+              </ToolbarButtonGroupItem>
+              <ToolbarButtonGroupItem
+                onMouseDown={() => setStepWidth((w) => Math.min(96, w + 8))}
+                aria-label={localized["pattern-zoom-in"]}
+              >
+                +
+              </ToolbarButtonGroupItem>
+            </ToolbarButtonGroup>
+          </FieldGroup>
+
+          <FieldGroup as="div">
+            <Localized name="pattern-octave" />
+            <ToolbarButtonGroup>
+              <ToolbarButtonGroupItem
+                onMouseDown={() => setBasePitch((p) => Math.max(0, p - 12))}
+                aria-label={localized["one-octave-down"]}
+              >
+                −
+              </ToolbarButtonGroupItem>
+              <ToolbarButtonGroupItem
+                onMouseDown={() => setBasePitch((p) => Math.min(96, p + 12))}
+                aria-label={localized["one-octave-up"]}
+              >
+                +
+              </ToolbarButtonGroupItem>
+            </ToolbarButtonGroup>
+          </FieldGroup>
+
+          <ToolbarButton
+            onMouseDown={() => setHistory(undo)}
+            disabled={!canUndo(history)}
+            aria-label={localized["orchestration-undo"]}
           >
-            {GRID_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </InlineSelect>
-        </FieldGroup>
-
-        <FieldGroup as="div">
-          <Localized name="pattern-zoom" />
+            <Undo size="1rem" />
+          </ToolbarButton>
+          <ToolbarButton
+            onMouseDown={() => setHistory(redo)}
+            disabled={!canRedo(history)}
+            aria-label={localized["orchestration-redo"]}
+          >
+            <Redo size="1rem" />
+          </ToolbarButton>
           <ToolbarButtonGroup>
             <ToolbarButtonGroupItem
-              onMouseDown={() => setStepWidth((w) => Math.max(16, w - 8))}
-              aria-label={localized["pattern-zoom-out"]}
+              onMouseDown={() => setView("grid")}
+              selected={view === "grid"}
             >
-              −
+              <Localized name="pattern-view-grid" />
             </ToolbarButtonGroupItem>
             <ToolbarButtonGroupItem
-              onMouseDown={() => setStepWidth((w) => Math.min(96, w + 8))}
-              aria-label={localized["pattern-zoom-in"]}
+              onMouseDown={() => setView("canvas")}
+              selected={view === "canvas"}
             >
-              +
+              <Localized name="pattern-view-canvas" />
             </ToolbarButtonGroupItem>
           </ToolbarButtonGroup>
-        </FieldGroup>
-
-        <FieldGroup as="div">
-          <Localized name="pattern-octave" />
-          <ToolbarButtonGroup>
-            <ToolbarButtonGroupItem
-              onMouseDown={() => setBasePitch((p) => Math.max(0, p - 12))}
-              aria-label={localized["one-octave-down"]}
-            >
-              −
-            </ToolbarButtonGroupItem>
-            <ToolbarButtonGroupItem
-              onMouseDown={() => setBasePitch((p) => Math.min(96, p + 12))}
-              aria-label={localized["one-octave-up"]}
-            >
-              +
-            </ToolbarButtonGroupItem>
-          </ToolbarButtonGroup>
-        </FieldGroup>
+          <ToolbarButton onMouseDown={openRail} selected={railOpen}>
+            <Localized name="pattern-layers" />
+          </ToolbarButton>
+          <ToolbarButton onMouseDown={openDrawer} selected={drawerOpen}>
+            <Localized name="pattern-event" />
+          </ToolbarButton>
+          <Button onClick={handleSave}>
+            <Localized name="pattern-save" />
+          </Button>
+          <PrimaryButton onClick={handleExport}>
+            <Localized name="pattern-to-song" />
+          </PrimaryButton>
+        </Secondary>
 
         <Spacer />
-
-        <ToolbarButton
-          onMouseDown={() => setHistory(undo)}
-          disabled={!canUndo(history)}
-          aria-label={localized["orchestration-undo"]}
+        <MoreButton
+          onMouseDown={() => setMoreOpen((open) => !open)}
+          selected={moreOpen}
+          aria-label={localized["pattern-more"]}
         >
-          <Undo size="1rem" />
-        </ToolbarButton>
-        <ToolbarButton
-          onMouseDown={() => setHistory(redo)}
-          disabled={!canRedo(history)}
-          aria-label={localized["orchestration-redo"]}
-        >
-          <Redo size="1rem" />
-        </ToolbarButton>
-        <ToolbarButton onMouseDown={openRail} selected={railOpen}>
-          <Localized name="pattern-layers" />
-        </ToolbarButton>
-        <ToolbarButton onMouseDown={openDrawer} selected={drawerOpen}>
-          <Localized name="pattern-event" />
-        </ToolbarButton>
-        <Button onClick={handleSave}>
-          <Localized name="pattern-save" />
-        </Button>
-        <PrimaryButton onClick={handleExport}>
-          <Localized name="pattern-to-song" />
-        </PrimaryButton>
+          <DotsHorizontal size="1rem" />
+        </MoreButton>
       </WorkspaceHeader>
 
       {hasOverhang(pattern) && (
@@ -669,33 +790,79 @@ export const PatternEditor: FC<PatternEditorProps> = ({
         />
 
         <CanvasArea>
-          <PatternCanvas
-            pattern={pattern}
-            activeLayerId={activeLayerId}
-            selectedNoteId={selected?.noteId ?? null}
-            basePitch={basePitch}
-            visibleRows={visibleRows}
-            stepWidth={stepWidth}
-            playheadTick={playheadTick}
-            onSelectNote={(layerId, noteId) => {
-              setSelected(noteId ? { layerId, noteId } : null)
-              if (noteId) setDrawerOpen(true)
-            }}
-            onCreateNote={handleCreateNote}
-            onDragNote={handleDragNote}
-            onBeginGesture={beginGesture}
-            onCommit={handleCommit}
-            onDeleteNote={handleDeleteNote}
-            onSetLength={(lengthTicks) =>
-              live(
-                setPatternLength(
-                  gestureApplyRef.current ?? patternRef.current,
-                  lengthTicks,
-                ),
-              )
-            }
-            onSelectLayer={(layerId) => setActiveLayerId(layerId)}
-          />
+          {view === "grid" ? (
+            <SongMakerGrid
+              pattern={pattern}
+              activeLayerId={activeLayerId}
+              selectedNoteId={selected?.noteId ?? null}
+              basePitch={basePitch}
+              rowCount={14}
+              cellWidth={Math.max(28, Math.round(stepWidth * 0.9))}
+              playheadTick={playheadTick}
+              keyRoot={gridKey}
+              mode={gridMode}
+              onToggle={(layerId, startTick, noteNumber) => {
+                const layer = pattern.trackLayers.find((l) => l.id === layerId)
+                const existing = layer?.notes.find(
+                  (note) =>
+                    note.startTick === startTick &&
+                    note.noteNumber === noteNumber,
+                )
+                if (existing) {
+                  handleDeleteNote(layerId, existing.id)
+                  return
+                }
+                gestureApplyRef.current = null
+                const result = addNote(pattern, layerId, {
+                  startTick,
+                  noteNumber,
+                  durationTicks: step,
+                })
+                if (!result.noteId) {
+                  toast.info(localized["pattern-layer-locked"])
+                  return
+                }
+                commit(result.pattern)
+                previewNote(layerId, noteNumber)
+              }}
+              onExtendNote={(layerId, noteId, durationTicks) =>
+                commit(resizeNote(pattern, layerId, noteId, durationTicks))
+              }
+              onSelectNote={(layerId, noteId) => {
+                setSelected({ layerId, noteId })
+                setDrawerOpen(true)
+              }}
+              onSelectLayer={(layerId) => setActiveLayerId(layerId)}
+            />
+          ) : (
+            <PatternCanvas
+              pattern={pattern}
+              activeLayerId={activeLayerId}
+              selectedNoteId={selected?.noteId ?? null}
+              basePitch={basePitch}
+              visibleRows={visibleRows}
+              stepWidth={stepWidth}
+              playheadTick={playheadTick}
+              onSelectNote={(layerId, noteId) => {
+                setSelected(noteId ? { layerId, noteId } : null)
+                if (noteId) setDrawerOpen(true)
+              }}
+              onCreateNote={handleCreateNote}
+              onDragNote={handleDragNote}
+              onBeginGesture={beginGesture}
+              onCommit={handleCommit}
+              onDeleteNote={handleDeleteNote}
+              onSetLength={(lengthTicks) =>
+                live(
+                  setPatternLength(
+                    gestureApplyRef.current ?? patternRef.current,
+                    lengthTicks,
+                  ),
+                )
+              }
+              onSelectLayer={(layerId) => setActiveLayerId(layerId)}
+            />
+          )}
 
           {drawerOpen && (
             <EventDrawer
