@@ -49,6 +49,8 @@ packages/tonemap-core/src/
   orchestration/ nicht-destruktiver Transformationsplan
   libraries/    Library-Manifeste, SFZ-Scanner
   ranking/      Feature-Layout, heuristischer Ranker, ONNX-Runtime-Binding
+  render/       Plan → MIDI, Render-Adapter (midi/sfizz/fluidsynth),
+                Render-Manifest mit Plan-Fingerprint
   training/     Trainingsdatensätze
   cli/          muse-tonemap
 schemas/tonemap/  JSON Schemas + feature-layout-v1.json

@@ -542,6 +542,8 @@ export default {
       "Did not match the intent but was the better choice – kept as its own class.",
     "tonemap-operations": "Operations",
     "tonemap-no-operations": "The plan is unchanged so far.",
+    "tonemap-to-song": "Play in MUSE",
+    "tonemap-sent-to-song": "Tracks written to the song",
   },
   fr: {
     "open-orchestration": "Orchestration…",
@@ -1089,6 +1091,8 @@ export default {
       "Ne correspondait pas à l’intention mais était le meilleur choix – conservé comme classe distincte.",
     "tonemap-operations": "Opérations",
     "tonemap-no-operations": "Le plan est encore inchangé.",
+    "tonemap-to-song": "Jouer dans MUSE",
+    "tonemap-sent-to-song": "Pistes écrites dans le morceau",
   },
   ja: {
     "open-orchestration": "Orchestration…",
@@ -1630,6 +1634,8 @@ export default {
       "意図とは違うがより良い選択だった場合 – 独立した分類として保存します。",
     "tonemap-operations": "操作",
     "tonemap-no-operations": "計画はまだ変更されていません。",
+    "tonemap-to-song": "MUSE で再生",
+    "tonemap-sent-to-song": "曲にトラックを書き出しました",
   },
   "zh-Hans": {
     "open-orchestration": "Orchestration…",
@@ -2159,6 +2165,8 @@ export default {
     "tonemap-serendipity-hint": "与意图不符但更好听 – 作为独立类别保存。",
     "tonemap-operations": "操作",
     "tonemap-no-operations": "方案目前未作改动。",
+    "tonemap-to-song": "在 MUSE 中播放",
+    "tonemap-sent-to-song": "已写入歌曲轨道",
   },
   "zh-Hant": {
     "open-orchestration": "Orchestration…",
@@ -2689,6 +2697,8 @@ export default {
     "tonemap-serendipity-hint": "與意圖不符但更好聽 – 作為獨立類別保存。",
     "tonemap-operations": "操作",
     "tonemap-no-operations": "方案目前未作改動。",
+    "tonemap-to-song": "在 MUSE 中播放",
+    "tonemap-sent-to-song": "已寫入歌曲軌道",
   },
   sk: {
     "open-orchestration": "Orchestration…",
@@ -3228,5 +3238,7 @@ export default {
       "Nezodpovedalo zámeru, ale bolo lepšie – uložené ako vlastná trieda.",
     "tonemap-operations": "Operácie",
     "tonemap-no-operations": "Plán je zatiaľ nezmenený.",
+    "tonemap-to-song": "Prehrať v MUSE",
+    "tonemap-sent-to-song": "Stopy zapísané do skladby",
   },
 } as const

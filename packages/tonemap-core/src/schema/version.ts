@@ -11,6 +11,7 @@ export const TONEMAP_SCHEMA_VERSION = "muse.tonemap.v1"
 export const PAIRED_SOURCE_SCHEMA_VERSION = "muse.paired-source.v1"
 export const LIBRARY_MANIFEST_SCHEMA_VERSION = "muse.library-manifest.v1"
 export const TRAINING_RECORD_SCHEMA_VERSION = "muse.training-record.v1"
+export const RENDER_MANIFEST_SCHEMA_VERSION = "muse.render-manifest.v1"
 export const FEATURE_LAYOUT_VERSION = "muse.feature-layout.v1"
 
 export interface VersionedDocument {

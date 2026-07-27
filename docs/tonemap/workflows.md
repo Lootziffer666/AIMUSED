@@ -216,6 +216,47 @@ und jeder Kandidat trägt `model unavailable: <Grund>` in seinen Begründungen.
 
 Es wird bewusst **kein** Modell mittrainiert oder mitgeliefert.
 
+## Rendering
+
+Ein Plan wird nicht direkt zu Audio, sondern zu **Jobs**: welche Dateien
+geschrieben, welcher Befehl ausgeführt und welche Ausgabe erwartet wird.
+`tonemap-core` startet dabei bewusst **keinen Prozess** – das gehört dem Host.
+Genau deshalb lässt sich ein Render planen, lesen und prüfen, ohne dass ein
+Renderer installiert ist.
+
+```
+node --experimental-strip-types packages/tonemap-core/src/cli/main.ts \
+  render projekt.json --plan plan.json --library manifest.json \
+  [--adapter midi|sfizz|fluidsynth] [--out render/] [--soundfont gm.sf2] [--dry-run]
+```
+
+| Adapter | Braucht | Ergebnis |
+| --- | --- | --- |
+| `midi` | nichts | `arrangement.mid` plus ein Stem pro Stimme |
+| `sfizz` | `sfizz_render`, SFZ-Bibliothek mit gesetztem `rootPath` | ein WAV pro Stimme |
+| `fluidsynth` | `fluidsynth`, eine SoundFont | ein WAV für das ganze Arrangement |
+| in der App | nichts | Plan-Spuren im Song, spielbar über MUSEs eigenen Player |
+
+Gemeinsame Grundlage ist `planToMidi`: es vergibt die Kanäle (Kanal 10 bleibt
+für Perkussion reserviert), schreibt Bank- und Programmwechsel des gewählten
+Patches, hält Keyswitches über die gesamte Stimme und setzt eine
+Prominenz-Hüllkurve als CC 7 um. Tempo, Takt- und Vorzeichnung werden aus der
+Quelldatei übernommen, damit ein Stem zur Referenzaufnahme passt. **Die
+Quelldatei selbst wird nie verändert.**
+
+Ein Job, dessen Patch sich nicht auflösen lässt, verschwindet nicht – er wird
+mit `issues` beschrieben: fehlender `rootPath`, Patch ohne SFZ, Stimme ohne
+gewähltes Patch, mehr Stimmen als MIDI-Kanäle. Stems mit gleichem Namen
+bekommen einen Zähler, damit keiner den anderen überschreibt.
+
+### Render-Manifest
+
+`render-manifest.json` hält fest, was gerendert wurde: Adapter, Plan-ID,
+gewählte Patches **samt der Begründungen des Rankers**, Bibliotheksversionen,
+Ausgabepfade und offene Punkte. Der `planFingerprint` ist ein Inhalts-Hash über
+alles, was den Klang ändert – ändert sich der Plan danach, meldet `isStale`,
+dass das Audio veraltet ist.
+
 ## Training-Record-Format
 
 Eine JSONL-Zeile je Beispiel (`schemas/tonemap/training-record-v1.schema.json`).

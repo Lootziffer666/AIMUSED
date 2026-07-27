@@ -1,5 +1,9 @@
+import { emptySong } from "@signal-app/core"
 import {
+  buildMotifGraph,
+  createPlanFromGraph,
   encodeWav,
+  HeuristicPatchRanker,
   midiToGraph,
   syntheticMotifMidi,
   wavDecoder,
@@ -8,6 +12,7 @@ import { describe, expect, it } from "vitest"
 import { ToneMapStore } from "../../stores/ToneMapStore"
 import { BUILTIN_LIBRARY_ID, createBuiltinLibrary } from "./builtinLibrary"
 import { analyze, assetWarnings, manifestFor } from "./pipeline"
+import { applyPlanToSong } from "./planSongAdapter"
 import { sniffAudioFormat } from "./webAudioDecoder"
 
 /**
@@ -212,5 +217,67 @@ describe("built-in library", () => {
     const pcm = wavDecoder.decode(wav)
     expect(pcm.sampleRate).toBe(8000)
     expect(pcm.frameCount).toBe(16)
+  })
+})
+
+describe("applyPlanToSong", () => {
+  function planFixture() {
+    const midi = loadedMidi()
+    const graph = midi.graph
+    return createPlanFromGraph(graph, buildMotifGraph(graph), {
+      toneMapProjectId: "theme",
+    })
+  }
+
+  it("writes one track per part and leaves the plan alone", () => {
+    const song = emptySong()
+    const plan = planFixture()
+    const before = song.tracks.length
+    const snapshot = JSON.stringify(plan)
+
+    const result = applyPlanToSong(song, plan)
+
+    expect(song.tracks.length).toBe(before + plan.parts.length)
+    expect(Object.keys(result.binding)).toHaveLength(plan.parts.length)
+    expect(JSON.stringify(plan)).toBe(snapshot)
+  })
+
+  it("updates the same tracks on a second apply instead of duplicating", () => {
+    const song = emptySong()
+    const plan = planFixture()
+    const first = applyPlanToSong(song, plan)
+    const after = song.tracks.length
+
+    const second = applyPlanToSong(song, plan, { binding: first.binding })
+    expect(song.tracks.length).toBe(after)
+    expect(second.binding).toEqual(first.binding)
+  })
+
+  it("gives back the track of a part that no longer exports", () => {
+    const song = emptySong()
+    const plan = planFixture()
+    const first = applyPlanToSong(song, plan)
+    const after = song.tracks.length
+
+    const reduced = { ...plan, parts: plan.parts.slice(0, 1) }
+    applyPlanToSong(song, reduced, { binding: first.binding })
+    expect(song.tracks.length).toBe(after - (plan.parts.length - 1))
+  })
+
+  it("carries the chosen preset into a program change", () => {
+    const song = emptySong()
+    const plan = planFixture()
+    const candidate = new HeuristicPatchRanker().rank({ limit: 1 }, [
+      createBuiltinLibrary(),
+    ])[0]
+    const result = applyPlanToSong(song, plan, {
+      patches: { [plan.parts[0].id]: candidate },
+    })
+
+    const track = song.getTrack(result.binding[plan.parts[0].id])
+    const programs = track?.events.filter(
+      (event) => "subtype" in event && event.subtype === "programChange",
+    )
+    expect(programs?.length).toBe(1)
   })
 })

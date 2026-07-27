@@ -1,3 +1,4 @@
+import type { TrackId } from "@signal-app/core"
 import type {
   AlignmentMap,
   AlignmentPoint,
@@ -35,6 +36,8 @@ export class ToneMapStore {
   plan: OrchestrationPlan | null = null
   libraries: InstrumentLibraryManifest[] = [createBuiltinLibrary()]
   trainingRecords: ToneMapTrainingRecord[] = []
+  /** partId -> song track id, so re-applying a plan updates its tracks */
+  planBinding: Record<string, TrackId> = {}
   selectedNodeId: string | null = null
   selectedPartId: string | null = null
   busy: string | null = null
@@ -51,6 +54,7 @@ export class ToneMapStore {
       project: observable.ref,
       motifGraph: observable.ref,
       plan: observable.ref,
+      planBinding: observable.ref,
       libraries: observable.ref,
       trainingRecords: observable.ref,
       selectedNodeId: observable,
@@ -61,6 +65,7 @@ export class ToneMapStore {
       setSource: action,
       setAnalysis: action,
       setPlan: action,
+      setPlanBinding: action,
       setSelectedNode: action,
       setSelectedPart: action,
       addManualAnchor: action,
@@ -107,6 +112,10 @@ export class ToneMapStore {
     if (plan && !plan.parts.some((part) => part.id === this.selectedPartId)) {
       this.selectedPartId = plan.parts[0]?.id ?? null
     }
+  }
+
+  setPlanBinding(binding: Record<string, TrackId>) {
+    this.planBinding = binding
   }
 
   setSelectedNode(id: string | null) {
@@ -193,6 +202,7 @@ export class ToneMapStore {
     this.project = null
     this.motifGraph = null
     this.plan = null
+    this.planBinding = {}
     this.selectedNodeId = null
     this.selectedPartId = null
     this.busy = null

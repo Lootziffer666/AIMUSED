@@ -22,6 +22,7 @@ import { type FC, useCallback, useMemo } from "react"
 import { useMobxGetter } from "../../hooks/useMobxSelector"
 import { useStores } from "../../hooks/useStores"
 import { Localized, useLocalization } from "../../localize/useLocalization"
+import { applyPlanToSong } from "../../services/tonemap/planSongAdapter"
 import { Alert } from "../ui/Alert"
 import { Button, PrimaryButton } from "../ui/Button"
 import {
@@ -110,7 +111,7 @@ const CandidateRow = styled.div`
 const ranker = new HeuristicPatchRanker()
 
 export const OrchestrationCompare: FC = () => {
-  const { toneMapStore } = useStores()
+  const { toneMapStore, songStore } = useStores()
   const toast = useToast()
   const localized = useLocalization()
   const project = useMobxGetter(toneMapStore, "project")
@@ -207,6 +208,36 @@ export const OrchestrationCompare: FC = () => {
     [candidates, observation, plan, selected, toneMapStore],
   )
 
+  /**
+   * The plan made audible without any external renderer: the same channel
+   * and program decisions the render adapters make, written into the song.
+   */
+  const sendToSong = useCallback(() => {
+    if (!plan) return
+    const chosen: Record<string, PatchCandidate> = {}
+    if (observation && selected && candidates[0]) {
+      chosen[selected.id] = candidates[0]
+    }
+    const result = applyPlanToSong(songStore.song, plan, {
+      patches: chosen,
+      binding: toneMapStore.planBinding,
+    })
+    toneMapStore.setPlanBinding(result.binding)
+    for (const warning of result.warnings) toast.info(warning)
+    toast.success(
+      `${localized["tonemap-sent-to-song"]}: ${Object.keys(result.binding).length}`,
+    )
+  }, [
+    candidates,
+    localized,
+    observation,
+    plan,
+    selected,
+    songStore.song,
+    toast,
+    toneMapStore,
+  ])
+
   const exportTraining = useCallback(() => {
     const jsonl = exportTrainingRecordsAsJsonl(trainingRecords)
     const blob = new Blob([jsonl], { type: "application/x-ndjson" })
@@ -296,6 +327,9 @@ export const OrchestrationCompare: FC = () => {
             <Localized name="tonemap-transpose-down" />
           </Button>
           <Spacer />
+          <PrimaryButton onClick={sendToSong}>
+            <Localized name="tonemap-to-song" />
+          </PrimaryButton>
           <Button
             onClick={exportTraining}
             disabled={trainingRecords.length === 0}

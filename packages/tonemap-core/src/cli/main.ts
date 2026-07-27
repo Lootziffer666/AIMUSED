@@ -5,9 +5,11 @@ import { alignMidiToAudio } from "../alignment/alignment.ts"
 import { registerLossyDecoders } from "../audio/codecs.ts"
 import { DeterministicFeatureExtractor } from "../audio/features.ts"
 import { createDefaultDecoderRegistry } from "../audio/pcm.ts"
+import type { InstrumentLibraryManifest } from "../libraries/manifest.ts"
 import { graphToJsonl, notesToTsv } from "../midi/debugFormat.ts"
 import { graphToMidi, midiToGraph } from "../midi/eventGraph.ts"
 import { buildMotifGraph } from "../motifs/motifGraph.ts"
+import type { OrchestrationPlan } from "../orchestration/plan.ts"
 import {
   createPlanFromGraph,
   doublePart,
@@ -23,6 +25,9 @@ import { checkManifestAssets } from "../pairing/privateAssets.ts"
 import { encodeFeatures } from "../ranking/featureLayout.ts"
 import { loadOnnxSession } from "../ranking/onnxSession.ts"
 import { HeuristicPatchRanker, OnnxPatchRanker } from "../ranking/ranker.ts"
+import { createRenderAdapter, describeJobs } from "../render/adapters.ts"
+import { createRenderManifest } from "../render/manifest.ts"
+import type { PatchCandidate } from "../schema/tonemap.ts"
 import { createProvenance } from "../schema/tonemap.ts"
 import {
   parseToneMapProject,
@@ -141,6 +146,12 @@ const HELP = `muse-tonemap – MUSE ToneMap pipeline
 
   rank <project.json> --library <library.json> [--limit N] [--model model.onnx]
       Ranks library patches for every observation.
+
+  render <project.json> --plan <plan.json> --library <library.json>
+        [--adapter midi|sfizz|fluidsynth] [--out render/] [--soundfont path.sf2]
+        [--samplerate 48000] [--dry-run]
+      Plans a render: writes the MIDI, prints the commands and a render
+      manifest. Nothing is executed – running the commands is up to you.
 
   export-training <project.json> --library <library.json> [--out records.jsonl]
       Writes training records for the later ONNX model.
@@ -392,6 +403,97 @@ async function main(): Promise<number> {
       await session?.dispose()
       writeOut(out, `${JSON.stringify(ranked, null, 2)}\n`)
       return 0
+    }
+
+    case "render": {
+      const parsed = parseToneMapProject(readJson(args.positional[0]))
+      if (!parsed.ok || !parsed.value)
+        throw new Error("ToneMap project is invalid")
+      const plan = readJson(requireFlag(args, "plan")) as OrchestrationPlan
+      const libraries = [
+        readJson(requireFlag(args, "library")),
+      ] as InstrumentLibraryManifest[]
+      const directory =
+        typeof args.flags.out === "string" ? args.flags.out : "render"
+      const adapterName =
+        typeof args.flags.adapter === "string" ? args.flags.adapter : "midi"
+      const adapter = createRenderAdapter(adapterName)
+
+      // top ranked candidate per part, unless the plan already names one
+      const ranker = new HeuristicPatchRanker()
+      const patches: Record<string, PatchCandidate> = {}
+      for (const part of plan.parts) {
+        const observation = parsed.value.observations.find(
+          (entry) => entry.sourceRef === part.sourceVoiceId,
+        )
+        const [best] = ranker.rank(
+          {
+            musicalFunction: observation?.musicalFunction.value,
+            register: observation?.register,
+            desiredTimbre: observation?.timbreIntent,
+            articulation: part.articulation,
+            limit: 1,
+          },
+          libraries,
+        )
+        if (best) patches[part.id] = best
+      }
+
+      const jobs = adapter.plan({
+        plan,
+        libraries,
+        patches,
+        outputDirectory: directory,
+        sampleRate: args.flags.samplerate
+          ? Number(args.flags.samplerate)
+          : undefined,
+        soundFontPath:
+          typeof args.flags.soundfont === "string"
+            ? args.flags.soundfont
+            : undefined,
+      })
+
+      console.error(describeJobs(jobs))
+
+      const manifest = createRenderManifest({
+        adapter: adapter.name,
+        plan,
+        patches,
+        jobs,
+        outputDirectory: directory,
+        libraries: libraries.map((library) => ({
+          id: library.id,
+          name: library.name,
+          version: library.version,
+        })),
+        sampleRate: args.flags.samplerate
+          ? Number(args.flags.samplerate)
+          : undefined,
+      })
+
+      if (args.flags["dry-run"]) {
+        console.error("dry run: nothing written")
+      } else {
+        mkdirSync(resolve(directory), { recursive: true })
+        for (const job of jobs) {
+          for (const file of job.inputs) {
+            writeFileSync(resolve(file.path), file.bytes)
+          }
+        }
+        writeFileSync(
+          resolve(directory, "render-manifest.json"),
+          `${JSON.stringify(manifest, null, 2)}\n`,
+        )
+        console.error(`written: ${directory}/render-manifest.json`)
+      }
+
+      const unresolved = jobs.filter((job) => job.issues.length > 0).length
+      console.error(
+        manifest.complete
+          ? `render plan complete: ${jobs.length} job(s)`
+          : `render plan incomplete: ${unresolved} of ${jobs.length} job(s) have unresolved issues`,
+      )
+      return manifest.complete ? 0 : 1
     }
 
     case "export-training": {
