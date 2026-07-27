@@ -1,3 +1,8 @@
+// Self-hosted, so a MUSE on a home server needs no connection to Google
+import "@fontsource/inter/300.css"
+import "@fontsource/inter/600.css"
+import "@fontsource/inter/800.css"
+import "@fontsource/roboto-mono/400.css"
 import * as Sentry from "@sentry/browser"
 import { configure } from "mobx"
 import { createRoot } from "react-dom/client"
@@ -19,8 +24,13 @@ root.render(<App />)
 
 if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
   window.addEventListener("load", () => {
+    // Relative to the document, so MUSE also works when it is hosted under a
+    // sub path such as https://example.com/muse/
+    const base = new URL("./", document.baseURI)
     navigator.serviceWorker
-      .register("/service-worker.js", { scope: "/edit" })
+      .register(new URL("service-worker.js", base).href, {
+        scope: base.pathname,
+      })
       .then((registration) => {
         console.log("SW registered: ", registration)
       })

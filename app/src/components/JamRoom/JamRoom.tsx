@@ -1,7 +1,9 @@
-import { keyframes } from "@emotion/react"
+import { keyframes, useTheme } from "@emotion/react"
 import styled from "@emotion/styled"
 import { getTempo } from "@signal-app/core"
 import { useToast } from "dialog-hooks"
+import Record from "mdi-react/RecordIcon"
+import Stop from "mdi-react/StopIcon"
 import {
   type FC,
   type PointerEvent as ReactPointerEvent,
@@ -18,8 +20,13 @@ import type {
   MusePerformanceTake,
   MuseTrackRole,
 } from "../../entities/performance/MusePerformanceTake"
+import {
+  checkMediaAvailability,
+  MediaUnavailableError,
+} from "../../helpers/secureContext"
 import { useRouter } from "../../hooks/useRouter"
 import { useStores } from "../../hooks/useStores"
+import { Localized, useLocalization } from "../../localize/useLocalization"
 import {
   CHANNEL_PROGRAM,
   getJamAudioEngine,
@@ -55,6 +62,19 @@ import {
   undoLastTake,
   wrapTick,
 } from "../../services/jamRoom/takeOps"
+import {
+  detectPaperDrums,
+  drumsToZones,
+} from "../../services/jamRoom/vision/paperDrums"
+import { ToolbarButton } from "../Toolbar/ToolbarButton"
+import { Button, PrimaryButton } from "../ui/Button"
+import {
+  FieldGroup,
+  InlineSelect,
+  Meta,
+  Spacer,
+  WorkspaceTitle,
+} from "../ui/Panel"
 import { HandOverlay } from "./HandOverlay"
 
 // ---------- styled ----------
@@ -64,8 +84,8 @@ const sway = keyframes`
   100% { transform: rotate(4deg) translateX(2%); }
 `
 const recPulse = keyframes`
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 77, 61, 0.55); }
-  50% { box-shadow: 0 0 0 14px rgba(255, 77, 61, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 currentColor; }
+  50% { box-shadow: 0 0 0 0.75rem transparent; }
 `
 const zoneFlash = keyframes`
   0% { transform: translate(-50%, -50%) scale(1); }
@@ -88,28 +108,27 @@ const Stage = styled.div`
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  color: #e8eef5;
-  background:
-    radial-gradient(1100px 700px at 12% -8%, rgba(34, 78, 102, 0.5), transparent 62%),
-    radial-gradient(900px 640px at 92% 108%, rgba(112, 62, 32, 0.32), transparent 60%),
-    #0b1118;
-  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-editor-background);
 `
 const Beams = styled.div`
   position: absolute;
   inset: -20%;
   pointer-events: none;
+  opacity: 0.5;
   background:
-    conic-gradient(from 195deg at 22% 0%, rgba(64, 160, 190, 0.1) 0deg, transparent 16deg),
-    conic-gradient(from 155deg at 78% 0%, rgba(240, 160, 80, 0.08) 0deg, transparent 15deg);
+    conic-gradient(
+      from 195deg at 22% 0%,
+      var(--color-highlight) 0deg,
+      transparent 16deg
+    ),
+    conic-gradient(
+      from 155deg at 78% 0%,
+      var(--color-highlight) 0deg,
+      transparent 15deg
+    );
   transform-origin: 50% 0%;
   animation: ${sway} 16s ease-in-out infinite alternate;
-`
-const Vignette = styled.div`
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(4, 8, 12, 0.75) 100%);
 `
 const CamVideo = styled.video`
   position: absolute;
@@ -117,109 +136,72 @@ const CamVideo = styled.video`
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.22;
+  opacity: 0.18;
   transform: scaleX(-1);
-  filter: saturate(0.6) contrast(1.05);
+
+  /* The rear camera already shows the world the right way round; mirroring it
+     would put the drawn drums on the wrong side. */
+  &[data-facing="environment"] {
+    transform: none;
+    opacity: 0.32;
+  }
 `
-const CamError = styled.div`
+const CamNotice = styled.div`
   position: absolute;
-  top: 74px;
-  right: 24px;
+  top: 3.5rem;
+  right: 1rem;
   z-index: 30;
-  padding: 8px 14px;
-  border: 1px solid rgba(255, 176, 84, 0.4);
-  border-radius: 8px;
-  color: #ffb054;
-  background: rgba(40, 26, 8, 0.85);
-  font-size: 12px;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--color-divider);
+  border-radius: 0.3rem;
+  color: var(--color-text-secondary);
+  background: var(--color-background);
+  font-size: 0.75rem;
 `
 const TopBar = styled.div`
   position: relative;
   z-index: 20;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  padding: 18px 24px 10px;
-`
-const Brand = styled.div`
-  color: #7d93a8;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.42em;
-`
-const Title = styled.h1`
-  display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   align-items: center;
-  margin: 2px 0 0;
-  font-size: 30px;
-  font-weight: 900;
-  line-height: 1;
-  letter-spacing: -0.02em;
+  padding: 0.5rem 1rem;
+  min-height: 3rem;
+
+  @media (max-width: 700px) {
+    padding: 0.5rem;
+  }
+  box-sizing: border-box;
+  background: var(--color-background);
+  border-bottom: 1px solid var(--color-divider);
 `
-const LiveDot = styled.span<{ on: boolean }>`
-  width: 9px;
-  height: 9px;
+const LiveDot = styled.span`
+  width: 0.5rem;
+  height: 0.5rem;
+  flex-shrink: 0;
   border-radius: 50%;
-  background: ${(p) => (p.on ? "#ff4d3d" : "#3a4a5a")};
-  animation: ${(p) => (p.on ? liveBlink : "none")} 1.1s infinite;
+  background: var(--color-text-tertiary);
+
+  &[data-on="true"] {
+    background: var(--color-record);
+    animation: ${liveBlink} 1.1s infinite;
+  }
 `
-const Readouts = styled.div`
+const Readout = styled.div`
   display: flex;
-  gap: 14px;
-  align-items: center;
-`
-const ReadoutBox = styled.div`
-  text-align: right;
+  align-items: baseline;
+  gap: 0.3rem;
 
   .value {
-    font-size: 26px;
-    font-family: ui-monospace, "SF Mono", Menlo, monospace;
-    font-weight: 700;
-    line-height: 1;
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text);
   }
 
   .label {
-    margin-top: 3px;
-    color: #7d93a8;
-    font-size: 9px;
-    letter-spacing: 0.3em;
-  }
-`
-const KeySelect = styled.select`
-  padding: 5px 6px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 6px;
-  color: #e8eef5;
-  background: rgba(12, 20, 30, 0.9);
-  font-size: 12px;
-  font-family: ui-monospace, Menlo, monospace;
-  cursor: pointer;
-
-  &:hover {
-    border-color: rgba(255, 255, 255, 0.35);
-  }
-`
-const SmallBtn = styled.button<{ accent?: string }>`
-  padding: 7px 12px;
-  border: 1px solid ${(p) => p.accent ?? "rgba(255,255,255,0.14)"};
-  border-radius: 6px;
-  color: #e8eef5;
-  background: rgba(12, 20, 30, 0.85);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
-
-  &:hover {
-    border-color: ${(p) => p.accent ?? "#f5a524"};
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: scale(0.96);
+    font-size: 0.65rem;
+    color: var(--color-text-secondary);
   }
 `
 const MainArea = styled.div`
@@ -228,91 +210,105 @@ const MainArea = styled.div`
   display: flex;
   flex: 1;
   min-height: 0;
-  padding-bottom: 88px;
+  padding-bottom: 4rem;
+
+  /* Portrait phone: the theremin becomes a strip above the stage instead of
+     eating half the width, and the bottom bar takes real space rather than
+     floating over the zones. */
+  @media (max-width: 700px) {
+    flex-direction: column;
+    padding-bottom: 0;
+  }
 `
 const ThereminField = styled.div`
   position: relative;
   width: 26%;
-  min-width: 220px;
-  margin: 8px 0 8px 24px;
+  min-width: 12rem;
+  margin: 0.5rem;
+  flex-shrink: 0;
+
+  @media (max-width: 700px) {
+    width: auto;
+    min-width: 0;
+    height: 7rem;
+  }
   overflow: hidden;
-  border: 1px solid rgba(255, 46, 136, 0.25);
-  border-radius: 12px;
-  background: linear-gradient(90deg, rgba(255, 46, 136, 0.07), rgba(34, 211, 238, 0.04));
+  border: 1px solid var(--color-divider);
+  border-radius: 0.5rem;
+  background: var(--color-background);
   cursor: crosshair;
   touch-action: none;
 `
-const StringLine = styled.div<{ active: boolean }>`
+const StringLine = styled.div`
   position: absolute;
   right: 8%;
   left: 8%;
-  height: 2px;
-  background: ${(p) => (p.active ? "#ff2e88" : "rgba(255,255,255,0.10)")};
-  box-shadow: ${(p) => (p.active ? "0 0 14px #ff2e88" : "none")};
-  transition: background 0.08s ease;
+  height: 1px;
+  background: var(--color-editor-grid);
+
+  &[data-active="true"] {
+    height: 2px;
+    background: var(--color-theme);
+  }
 `
-const PitchTag = styled.div<{ y: number }>`
+const PitchTag = styled.div`
   position: absolute;
-  top: ${(p) => p.y}%;
-  right: 10px;
-  color: #ff77b3;
-  font-size: 13px;
-  font-family: ui-monospace, Menlo, monospace;
-  font-weight: 700;
-  text-shadow: 0 0 10px rgba(255, 46, 136, 0.8);
+  right: 0.5rem;
+  color: var(--color-theme);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
   transform: translateY(-50%);
 `
 const FieldHint = styled.div`
   position: absolute;
   right: 0;
-  bottom: 10px;
+  bottom: 0.5rem;
   left: 0;
-  color: #6d8296;
-  font-size: 9px;
-  letter-spacing: 0.28em;
+  color: var(--color-text-secondary);
+  font-size: 0.65rem;
   text-align: center;
-  text-transform: uppercase;
 `
 const CenterStage = styled.div`
   position: relative;
   flex: 1;
   touch-action: none;
 `
-const Zone = styled.div<{ color: string; hit: boolean }>`
+const Zone = styled.div`
   position: absolute;
   display: flex;
-  width: 132px;
-  height: 132px;
+  /* big enough for a child's finger, small enough for three side by side */
+  width: min(8rem, 27vw);
+  height: min(8rem, 27vw);
   align-items: center;
   justify-content: center;
-  border: 3px dashed ${(p) => p.color};
+  border: 2px dashed;
   border-radius: 50%;
-  background: ${(p) => (p.hit ? `${p.color}3d` : "rgba(255,255,255,0.02)")};
-  box-shadow: ${(p) => (p.hit ? `0 0 34px ${p.color}` : "none")};
   cursor: pointer;
-  animation: ${(p) => (p.hit ? zoneFlash : "none")} 0.22s ease;
   user-select: none;
+
+  &[data-hit="true"] {
+    animation: ${zoneFlash} 0.22s ease;
+  }
 `
-const ZoneLabel = styled.span<{ color: string }>`
-  color: ${(p) => p.color};
-  font-size: 12px;
-  font-family: ui-monospace, Menlo, monospace;
-  font-weight: 700;
-  letter-spacing: 0.18em;
+const ZoneLabel = styled.span`
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
 `
 const ZoneGrip = styled.div`
   position: absolute;
-  top: -6px;
+  top: -0.35rem;
   left: 50%;
-  width: 26px;
-  height: 12px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.16);
+  width: 1.5rem;
+  height: 0.7rem;
+  border-radius: 0.35rem;
+  background: var(--color-background-secondary);
   cursor: grab;
   transform: translateX(-50%);
 
   &:hover {
-    background: rgba(255, 255, 255, 0.35);
+    background: var(--color-text-tertiary);
   }
 `
 const RingWrap = styled.div`
@@ -320,28 +316,32 @@ const RingWrap = styled.div`
   top: 46%;
   left: 50%;
   display: flex;
-  width: 190px;
-  height: 190px;
+  width: min(11rem, 34vw);
+  height: min(11rem, 34vw);
   align-items: center;
   justify-content: center;
   pointer-events: none;
   transform: translate(-50%, -50%);
+
+  /* portrait puts the zones lower, so the ring moves out of their way */
+  @media (max-width: 700px) {
+    top: 30%;
+  }
 `
 const RingCenter = styled.div`
   position: absolute;
   text-align: center;
 
   .bar {
-    font-size: 24px;
-    font-family: ui-monospace, Menlo, monospace;
-    font-weight: 700;
+    font-family: var(--font-mono);
+    font-size: 1.25rem;
+    font-weight: 600;
   }
 
   .sub {
-    margin-top: 2px;
-    color: #7d93a8;
-    font-size: 9px;
-    letter-spacing: 0.3em;
+    margin-top: 0.1rem;
+    color: var(--color-text-secondary);
+    font-size: 0.65rem;
   }
 `
 const VoiceCanvas = styled.canvas`
@@ -353,39 +353,41 @@ const VoiceCanvas = styled.canvas`
 `
 const LayersShelf = styled.div`
   position: absolute;
-  bottom: 14px;
-  left: 18px;
+  bottom: 0.75rem;
+  left: 0.75rem;
   display: flex;
-  max-width: 250px;
+  max-width: 16rem;
+
+  @media (max-width: 700px) {
+    max-width: 45vw;
+  }
   flex-direction: column;
-  gap: 6px;
+  gap: 0.25rem;
 `
-const LayerPill = styled.div<{ color: string }>`
+const LayerPill = styled.div`
   display: flex;
-  gap: 8px;
+  gap: 0.4rem;
   align-items: center;
-  padding: 6px 12px;
-  border: 1px solid ${(p) => p.color}55;
-  border-radius: 8px;
-  background: rgba(8, 14, 21, 0.85);
-  font-size: 11px;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--color-divider);
+  border-radius: 0.3rem;
+  background: var(--color-background);
+  font-size: 0.7rem;
   animation: ${layerIn} 0.3s ease;
 `
-const LayerDot = styled.span<{ color: string }>`
-  width: 8px;
-  height: 8px;
+const LayerDot = styled.span`
+  width: 0.5rem;
+  height: 0.5rem;
   flex-shrink: 0;
   border-radius: 50%;
-  background: ${(p) => p.color};
 `
 const MuseBadge = styled.span`
-  padding: 2px 5px;
-  border-radius: 4px;
-  color: #0b1118;
-  background: #2dd4a7;
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
+  padding: 0 0.3rem;
+  border-radius: 0.2rem;
+  color: var(--color-on-surface);
+  background: var(--color-theme);
+  font-size: 0.6rem;
+  font-weight: 600;
 `
 const BottomBar = styled.div`
   position: absolute;
@@ -395,131 +397,58 @@ const BottomBar = styled.div`
   z-index: 25;
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 0.5rem;
   align-items: center;
-  padding: 14px 24px;
-  background: linear-gradient(0deg, rgba(6, 10, 16, 0.92) 30%, transparent);
-`
-const RecButton = styled.button<{ recording: boolean }>`
-  width: 58px;
-  height: 58px;
-  border: 2px solid ${(p) => (p.recording ? "#ff4d3d" : "#f5a524")};
-  border-radius: 50%;
-  color: ${(p) => (p.recording ? "#ff8a7d" : "#f5c56b")};
-  background: ${(p) =>
-    p.recording ? "rgba(255, 77, 61, 0.18)" : "rgba(245, 165, 36, 0.10)"};
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  white-space: pre-line;
-  cursor: pointer;
-  transition: transform 0.12s ease;
-  animation: ${(p) => (p.recording ? recPulse : "none")} 1.4s infinite;
+  padding: 0.5rem 1rem;
+  box-sizing: border-box;
+  background: var(--color-background);
+  border-top: 1px solid var(--color-divider);
 
-  &:hover {
-    transform: scale(1.06);
-  }
-
-  &:active {
-    transform: scale(0.94);
+  @media (max-width: 700px) {
+    position: static;
+    justify-content: center;
+    padding: 0.5rem;
   }
 `
-const ArmButton = styled.button<{ color: string; armed: boolean }>`
+const RecButton = styled.button`
   display: flex;
-  gap: 8px;
+  width: 2.5rem;
+  height: 2.5rem;
   align-items: center;
-  padding: 11px 16px;
-  border: 1px solid ${(p) => (p.armed ? p.color : "rgba(255,255,255,0.14)")};
-  border-radius: 9px;
-  color: ${(p) => (p.armed ? p.color : "#9db1c4")};
-  background: ${(p) => (p.armed ? `${p.color}26` : "rgba(12, 20, 30, 0.8)")};
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  justify-content: center;
+  border: 1px solid var(--color-divider);
+  border-radius: 50%;
+  color: var(--color-record);
+  background: transparent;
   cursor: pointer;
-  transition: all 0.12s ease;
-
-  &::before {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: ${(p) => (p.armed ? p.color : "#3a4a5a")};
-    content: "";
-  }
+  outline: none;
+  flex-shrink: 0;
 
   &:hover {
-    transform: translateY(-1px);
+    background: var(--color-highlight);
   }
 
-  &:active {
-    transform: scale(0.96);
-  }
-`
-const GhostButton = styled.button`
-  padding: 11px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 9px;
-  color: #9db1c4;
-  background: rgba(12, 20, 30, 0.8);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: all 0.12s ease;
-
-  &:hover {
-    border-color: rgba(255, 255, 255, 0.4);
-    color: #e8eef5;
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: scale(0.96);
-  }
-
-  &:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-    transform: none;
-  }
-`
-const ExportButton = styled.button`
-  margin-left: auto;
-  padding: 13px 20px;
-  border: none;
-  border-radius: 9px;
-  color: #161006;
-  background: #f5a524;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: all 0.12s ease;
-
-  &:hover {
-    background: #ffbd4d;
-    box-shadow: 0 6px 22px rgba(245, 165, 36, 0.35);
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: scale(0.96);
+  &[data-recording="true"] {
+    border-color: var(--color-record);
+    animation: ${recPulse} 1.4s infinite;
   }
 `
 const Hint = styled.div`
   position: absolute;
-  bottom: 96px;
+  bottom: 4.5rem;
+  max-width: 90vw;
+  white-space: normal;
+  text-align: center;
   left: 50%;
   z-index: 18;
-  color: #6d8296;
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  white-space: nowrap;
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
   pointer-events: none;
   transform: translateX(-50%);
+
+  @media (max-width: 700px) {
+    bottom: 0.5rem;
+  }
 `
 
 // ---------- config ----------
@@ -530,6 +459,8 @@ interface DrumZoneState {
   color: string
   xPct: number
   yPct: number
+  /** Set when the zone came from a drawing – it keeps the size that was drawn */
+  radiusPct?: number
 }
 
 const INITIAL_ZONES: DrumZoneState[] = [
@@ -584,6 +515,8 @@ export const JamRoom: FC = () => {
   const rootStore = useStores()
   const { songStore, player, synth, synthGroup } = rootStore
   const toast = useToast()
+  const localized = useLocalization()
+  const theme = useTheme()
   const { setPath } = useRouter()
 
   const song = songStore.song
@@ -620,6 +553,12 @@ export const JamRoom: FC = () => {
     "off" | "loading" | "running" | "error"
   >("off")
   const [handsMsg, setHandsMsg] = useState<string | null>(null)
+  const [cameraReady, setCameraReady] = useState(false)
+  /**
+   * A drum kit drawn on paper lies on the table, so scanning it needs the rear
+   * camera. Hand tracking wants the front one, where you can see yourself.
+   */
+  const [facing, setFacing] = useState<"user" | "environment">("user")
 
   // ---- refs ----
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -680,9 +619,13 @@ export const JamRoom: FC = () => {
     let cancelled = false
     const setup = async () => {
       try {
+        const availability = checkMediaAvailability()
+        if (!availability.available) {
+          throw new MediaUnavailableError(availability.reason)
+        }
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
-            facingMode: "user",
+            facingMode: facing,
             width: { ideal: 1280 },
             height: { ideal: 720 },
           },
@@ -694,16 +637,20 @@ export const JamRoom: FC = () => {
         }
         camStreamRef.current = stream
         if (videoRef.current) videoRef.current.srcObject = stream
+        setCameraError(null)
+        setCameraReady(true)
       } catch (e) {
-        setCameraError(handleCameraError(e))
+        setCameraReady(false)
+        setCameraError(localized[handleCameraError(e) as "camera-error"])
       }
     }
     void setup()
     return () => {
       cancelled = true
+      setCameraReady(false)
       camStreamRef.current?.getTracks().forEach((t) => t.stop())
     }
-  }, [])
+  }, [facing, localized])
 
   // ---- audio hookup: share the app clock, route through the SoundFont ----
   useEffect(() => {
@@ -782,7 +729,13 @@ export const JamRoom: FC = () => {
       (det.root !== musicKey.root || det.mode !== musicKey.mode)
     ) {
       setMusicKey({ root: det.root, mode: det.mode, manual: false })
-      toast.info(`Tonart erkannt: ${keyName(det.root, det.mode)}`)
+      toast.info(
+        `${localized["jam-key-detected"]}: ${keyName(det.root)} ${
+          det.mode === "major"
+            ? localized["scale-major"]
+            : localized["scale-minor"]
+        }`,
+      )
     }
   }, [takes, musicKey, toast])
 
@@ -836,13 +789,11 @@ export const JamRoom: FC = () => {
       if (i === 0) g.moveTo(x, y)
       else g.lineTo(x, y)
     })
-    g.strokeStyle = "#f5a524"
+    g.strokeStyle = theme.themeColor
     g.lineWidth = 3
     g.lineJoin = "round"
-    g.shadowColor = "#f5a524"
-    g.shadowBlur = 14
     g.stroke()
-  }, [])
+  }, [theme.themeColor])
 
   const startVoiceRecording = useCallback(async () => {
     ensureScheduler()
@@ -873,9 +824,9 @@ export const JamRoom: FC = () => {
         tracker.addFrame(f)
       }
       setIsRecordingVoice(true)
-      toast.success("Aufnahme läuft – sing oder summ in den Loop.")
+      toast.success(localized["jam-recording"])
     } catch (e) {
-      toast.error(handleMicError(e))
+      toast.error(localized[handleMicError(e) as "mic-error"])
     }
   }, [LOOP_TICKS, drawTrail, engine, ensureScheduler, toast])
 
@@ -961,12 +912,24 @@ export const JamRoom: FC = () => {
       const stage = stageRef.current
       if (!stage) return null
       const r = stage.getBoundingClientRect()
+      // Nearest zone wins, so overlapping drawn shapes never fight over a hit
+      let best: DrumZoneState | null = null
+      let bestDistance = Number.POSITIVE_INFINITY
       for (const z of zonesRef.current) {
         const zx = (z.xPct / 100) * r.width
         const zy = (z.yPct / 100) * r.height
-        if (Math.hypot(xPx - zx, yPx - zy) <= ZONE_RADIUS_PX) return z
+        // a zone read off paper is as big as it was drawn
+        const radius =
+          z.radiusPct !== undefined
+            ? (z.radiusPct / 100) * r.width
+            : ZONE_RADIUS_PX
+        const distance = Math.hypot(xPx - zx, yPx - zy)
+        if (distance <= radius && distance < bestDistance) {
+          best = z
+          bestDistance = distance
+        }
       }
-      return null
+      return best
     },
     [],
   )
@@ -1030,11 +993,60 @@ export const JamRoom: FC = () => {
   const addZone = useCallback(() => {
     const next = ADDABLE_ZONES.find((a) => !zones.some((z) => z.id === a.id))
     if (!next) {
-      toast.info("Mehr Zonen gibt es in dieser Version nicht.")
+      toast.info(localized["jam-no-more-zones"])
       return
     }
     setZones((prev) => [...prev, { ...next, xPct: 62, yPct: 38 }])
-  }, [zones, toast])
+  }, [zones, toast, localized])
+
+  /**
+   * Reads the drum kit off a sheet of paper.
+   *
+   * One camera frame, the shapes the ink encloses, and those become the zones.
+   * Nothing is detected continuously: a drawing does not move, and scanning
+   * once on request keeps the frame rate for the hands.
+   */
+  const scanPaperDrums = useCallback(() => {
+    const video = videoRef.current
+    if (!video || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+      toast.info(localized["jam-paper-no-camera"])
+      return
+    }
+    const width = Math.min(320, video.videoWidth)
+    if (width <= 0) {
+      toast.info(localized["jam-paper-no-camera"])
+      return
+    }
+    const height = Math.round((video.videoHeight / video.videoWidth) * width)
+    const canvas = document.createElement("canvas")
+    canvas.width = width
+    canvas.height = height
+    const context = canvas.getContext("2d", { willReadFrequently: true })
+    if (!context) return
+    context.drawImage(video, 0, 0, width, height)
+
+    const drums = detectPaperDrums(context.getImageData(0, 0, width, height))
+    if (drums.length === 0) {
+      toast.info(localized["jam-paper-nothing-found"])
+      return
+    }
+
+    const detected = drumsToZones(drums, { mirrored: facing === "user" })
+    setZones(
+      detected.map((zone, index) => ({
+        id: zone.id,
+        label: zone.label,
+        color:
+          INITIAL_ZONES[index]?.color ??
+          ADDABLE_ZONES[index - INITIAL_ZONES.length]?.color ??
+          theme.themeColor,
+        xPct: zone.xPct,
+        yPct: zone.yPct,
+        radiusPct: zone.radiusPct,
+      })),
+    )
+    toast.success(`${localized["jam-paper-found"]}: ${detected.length}`)
+  }, [facing, localized, theme.themeColor, toast])
 
   // ---- theremin (continuous pitch, scale-bound) ----
   const noteFromT = useCallback(
@@ -1242,7 +1254,7 @@ export const JamRoom: FC = () => {
     setTakes((prev) => {
       const next = undoLastTake(prev)
       if (next.length === prev.length)
-        toast.info("Nichts zum Rückgängigmachen.")
+        toast.info(localized["jam-nothing-to-undo"])
       return next
     })
   }, [toast])
@@ -1291,55 +1303,62 @@ export const JamRoom: FC = () => {
 
   return (
     <Stage>
-      <CamVideo ref={videoRef} autoPlay muted playsInline />
+      <CamVideo
+        ref={videoRef}
+        data-facing={facing}
+        autoPlay
+        muted
+        playsInline
+      />
       <Beams />
-      <Vignette />
-      {cameraError && <CamError>{cameraError}</CamError>}
-      {handsStatus === "loading" && <CamError>Hand-Modell lädt…</CamError>}
+      {cameraError && <CamNotice>{cameraError}</CamNotice>}
+      {handsStatus === "loading" && (
+        <CamNotice>
+          <Localized name="jam-hands-loading" />
+        </CamNotice>
+      )}
       {handsStatus === "error" && (
-        <CamError>{handsMsg ?? "Hand-Tracking nicht verfügbar."}</CamError>
+        <CamNotice>{handsMsg ?? localized["jam-hands-unavailable"]}</CamNotice>
       )}
 
       <TopBar>
-        <div>
-          <Brand>MUSE</Brand>
-          <Title>
-            JAM ROOM
-            <LiveDot on={schedulerRef.current?.isRunning ?? loopStep > 0} />
-          </Title>
-        </div>
-        <Readouts>
-          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            <KeySelect
-              value={musicKey.root}
-              onChange={(e) => changeKey(Number(e.target.value), musicKey.mode)}
-              title="Grundton"
-            >
-              {NOTE_NAMES.map((n, i) => (
-                <option key={n} value={i}>
-                  {n}
-                </option>
-              ))}
-            </KeySelect>
-            <KeySelect
-              value={musicKey.mode}
-              onChange={(e) =>
-                changeKey(musicKey.root, e.target.value as "major" | "minor")
-              }
-              title="Tongeschlecht"
-            >
-              <option value="major">dur</option>
-              <option value="minor">moll</option>
-            </KeySelect>
-          </div>
-          <ReadoutBox>
-            <div className="value">{bpm}</div>
-            <div className="label">BPM</div>
-          </ReadoutBox>
-          <SmallBtn accent="#38bdf8" onClick={onTapTempo}>
-            Tap
-          </SmallBtn>
-        </Readouts>
+        <WorkspaceTitle>
+          <Localized name="jam-room" />
+        </WorkspaceTitle>
+        <LiveDot data-on={schedulerRef.current?.isRunning ?? loopStep > 0} />
+
+        <FieldGroup>
+          <Localized name="jam-key" />
+          <InlineSelect
+            value={musicKey.root}
+            onChange={(e) => changeKey(Number(e.target.value), musicKey.mode)}
+            aria-label={localized["jam-key"]}
+          >
+            {NOTE_NAMES.map((n, i) => (
+              <option key={n} value={i}>
+                {n}
+              </option>
+            ))}
+          </InlineSelect>
+          <InlineSelect
+            value={musicKey.mode}
+            onChange={(e) =>
+              changeKey(musicKey.root, e.target.value as "major" | "minor")
+            }
+            aria-label={localized["jam-mode"]}
+          >
+            <option value="major">{localized["scale-major"]}</option>
+            <option value="minor">{localized["scale-minor"]}</option>
+          </InlineSelect>
+        </FieldGroup>
+
+        <Readout>
+          <span className="value">{bpm}</span>
+          <span className="label">BPM</span>
+        </Readout>
+        <Button onClick={onTapTempo}>
+          <Localized name="jam-tap-tempo" />
+        </Button>
       </TopBar>
 
       <MainArea>
@@ -1353,23 +1372,29 @@ export const JamRoom: FC = () => {
           {scaleNotes.slice(0, 12).map((note, i) => (
             <StringLine
               key={note}
-              active={i === activeStringIdx % 12}
+              data-active={i === activeStringIdx % 12}
               style={{ top: `${8 + (i / 11) * 80}%` }}
             />
           ))}
           {thereminNote !== null && (
             <PitchTag
-              y={
-                88 -
-                (scaleNotes.indexOf(Math.round(thereminNote)) /
-                  (scaleNotes.length - 1)) *
-                  80
-              }
+              style={{
+                top: `${
+                  88 -
+                  (
+                    scaleNotes.indexOf(Math.round(thereminNote)) /
+                      (scaleNotes.length - 1)
+                  ) *
+                    80
+                }%`,
+              }}
             >
               {noteName(Math.round(thereminNote))}
             </PitchTag>
           )}
-          <FieldHint>Theremin · halten &amp; gleiten</FieldHint>
+          <FieldHint>
+            <Localized name="jam-theremin-hint" />
+          </FieldHint>
         </ThereminField>
 
         <CenterStage ref={stageRef} onPointerMove={trackPointer}>
@@ -1387,14 +1412,14 @@ export const JamRoom: FC = () => {
           />
 
           <RingWrap>
-            <svg width="190" height="190" viewBox="0 0 120 120" role="img">
-              <title>Loop-Fortschritt</title>
+            <svg width="100%" height="100%" viewBox="0 0 120 120" role="img">
+              <title>{localized["jam-loop-progress"]}</title>
               <circle
                 cx="60"
                 cy="60"
                 r={R}
                 fill="none"
-                stroke="rgba(255,255,255,0.08)"
+                stroke="var(--color-divider)"
                 strokeWidth="5"
               />
               <circle
@@ -1402,7 +1427,11 @@ export const JamRoom: FC = () => {
                 cy="60"
                 r={R}
                 fill="none"
-                stroke={isRecordingVoice ? "#ff4d3d" : "#f5a524"}
+                stroke={
+                  isRecordingVoice
+                    ? "var(--color-record)"
+                    : "var(--color-theme)"
+                }
                 strokeWidth="5"
                 strokeLinecap="round"
                 strokeDasharray={CIRC}
@@ -1415,19 +1444,30 @@ export const JamRoom: FC = () => {
               <div className="bar">
                 {bar}.{beat}
               </div>
-              <div className="sub">{takes.length} LAYER</div>
+              <div className="sub">
+                {takes.length} <Localized name="jam-layers" />
+              </div>
             </RingCenter>
           </RingWrap>
 
           {zones.map((z) => (
             <Zone
               key={z.id}
-              color={z.color}
-              hit={!!flash[z.id]}
+              data-hit={!!flash[z.id]}
               style={{
                 left: `${z.xPct}%`,
                 top: `${z.yPct}%`,
                 transform: "translate(-50%, -50%)",
+                borderColor: z.color,
+                background: flash[z.id] ? `${z.color}3d` : "transparent",
+                ...(z.radiusPct !== undefined
+                  ? {
+                      // the drawing decides how big the zone is
+                      width: `${z.radiusPct * 2}%`,
+                      height: `${z.radiusPct * 2}%`,
+                      aspectRatio: "1",
+                    }
+                  : {}),
               }}
               onPointerDown={(e) => {
                 e.stopPropagation()
@@ -1441,22 +1481,25 @@ export const JamRoom: FC = () => {
                   setDragZone(z.id)
                 }}
               />
-              <ZoneLabel color={z.color}>{z.label}</ZoneLabel>
+              <ZoneLabel style={{ color: z.color }}>{z.label}</ZoneLabel>
             </Zone>
           ))}
 
           <LayersShelf>
             {takes.slice(-6).map((t) => (
-              <LayerPill key={t.id} color={ROLE_COLOR[t.role] ?? "#9db1c4"}>
-                <LayerDot color={ROLE_COLOR[t.role] ?? "#9db1c4"} />
-                <span style={{ fontWeight: 700, letterSpacing: "0.08em" }}>
+              <LayerPill key={t.id}>
+                <LayerDot
+                  style={{
+                    background:
+                      ROLE_COLOR[t.role] ?? "var(--color-text-secondary)",
+                  }}
+                />
+                <span style={{ fontWeight: 600 }}>
                   {SOURCE_LABEL[t.source] ?? t.source}
                 </span>
-                <span style={{ color: "#7d93a8" }}>
-                  {t.notes.length > 0
-                    ? `${t.notes.length} Noten`
-                    : `${t.drumHits.length} Hits`}
-                </span>
+                <Meta as="span">
+                  {t.notes.length > 0 ? t.notes.length : t.drumHits.length}
+                </Meta>
                 {t.generatedBy === "muse" && <MuseBadge>MUSE</MuseBadge>}
               </LayerPill>
             ))}
@@ -1466,37 +1509,33 @@ export const JamRoom: FC = () => {
 
       {takes.length === 0 && (
         <Hint>
-          Arm eine Spur und leg los – MUSE steigt nach deinem ersten Loop mit
-          ein.
+          <Localized name="jam-empty-hint" />
         </Hint>
       )}
 
       <BottomBar>
         <RecButton
-          recording={isRecordingVoice}
+          data-recording={isRecordingVoice}
+          aria-label={localized["start-stop-recording"]}
           onClick={
             isRecordingVoice
               ? stopVoiceRecording
               : () => void startVoiceRecording()
           }
         >
-          {isRecordingVoice ? "STOP" : "REC\nVOX"}
+          {isRecordingVoice ? <Stop size="1.2rem" /> : <Record size="1.2rem" />}
         </RecButton>
-        <ArmButton color="#ff8f3f" armed={drumsArmed} onClick={toggleDrums}>
-          Drums
-        </ArmButton>
-        <ArmButton
-          color="#ff2e88"
-          armed={thereminArmed}
-          onClick={() => setThereminArmed((a) => !a)}
+        <ToolbarButton onMouseDown={toggleDrums} selected={drumsArmed}>
+          <Localized name="jam-drums" />
+        </ToolbarButton>
+        <ToolbarButton
+          onMouseDown={() => setThereminArmed((a) => !a)}
+          selected={thereminArmed}
         >
-          Theremin
-        </ArmButton>
-        <SmallBtn onClick={addZone}>+ Zone</SmallBtn>
-        <ArmButton
-          color="#2dd4a7"
-          armed={handsOn}
-          onClick={() => {
+          <Localized name="jam-theremin" />
+        </ToolbarButton>
+        <ToolbarButton
+          onMouseDown={() => {
             const next = !handsOn
             setHandsOn(next)
             if (!next) {
@@ -1504,23 +1543,42 @@ export const JamRoom: FC = () => {
               setHandsMsg(null)
             }
           }}
+          selected={handsOn}
         >
-          Hände
-        </ArmButton>
+          <Localized name="jam-hands" />
+        </ToolbarButton>
         {handsOn && (
-          <SmallBtn onClick={() => setHandsSwapped((s) => !s)}>
-            {handsSwapped ? "Hände: getauscht" : "Hände: normal"}
-          </SmallBtn>
+          <ToolbarButton
+            onMouseDown={() => setHandsSwapped((s) => !s)}
+            selected={handsSwapped}
+          >
+            <Localized name="jam-hands-swap" />
+          </ToolbarButton>
         )}
-        <GhostButton onClick={onUndo} disabled={takes.length === 0}>
-          Undo
-        </GhostButton>
-        <GhostButton onClick={onClear} disabled={takes.length === 0}>
-          Clear
-        </GhostButton>
-        <ExportButton onClick={openInPianoRoll}>
-          Piano Roll öffnen →
-        </ExportButton>
+        <ToolbarButton
+          onMouseDown={() =>
+            setFacing((f) => (f === "user" ? "environment" : "user"))
+          }
+          selected={facing === "environment"}
+        >
+          <Localized name="jam-rear-camera" />
+        </ToolbarButton>
+        <Button onClick={scanPaperDrums} disabled={!cameraReady}>
+          <Localized name="jam-scan-paper" />
+        </Button>
+        <Button onClick={addZone}>
+          <Localized name="jam-add-zone" />
+        </Button>
+        <Button onClick={onUndo} disabled={takes.length === 0}>
+          <Localized name="orchestration-undo" />
+        </Button>
+        <Button onClick={onClear} disabled={takes.length === 0}>
+          <Localized name="jam-clear" />
+        </Button>
+        <Spacer />
+        <PrimaryButton onClick={openInPianoRoll}>
+          <Localized name="jam-open-piano-roll" />
+        </PrimaryButton>
       </BottomBar>
     </Stage>
   )

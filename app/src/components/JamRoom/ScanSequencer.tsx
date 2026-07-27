@@ -1,3 +1,4 @@
+import { useTheme } from "@emotion/react"
 import styled from "@emotion/styled"
 import { getTempo, type TrackId } from "@signal-app/core"
 import { useToast } from "dialog-hooks"
@@ -14,8 +15,13 @@ import type {
   MusePerformanceNote,
   MusePerformanceTake,
 } from "../../entities/performance/MusePerformanceTake"
+import {
+  checkMediaAvailability,
+  MediaUnavailableError,
+} from "../../helpers/secureContext"
 import { useRouter } from "../../hooks/useRouter"
 import { useStores } from "../../hooks/useStores"
+import { Localized, useLocalization } from "../../localize/useLocalization"
 import { applyJamRoomTakeToSong } from "../../services/jamRoom/jamRoomSongAdapter"
 import {
   handleCameraError,
@@ -26,10 +32,12 @@ import {
   advanceScanLines,
   createScanLines,
   DEFAULT_SCAN_CONFIG,
-  sampleRowLuminance,
   type ScanLineState,
+  sampleRowLuminance,
 } from "../../services/jamRoom/scanSequencer"
+import { Alert } from "../ui/Alert"
 import { Button, PrimaryButton } from "../ui/Button"
+import { WorkspaceSubtitle, WorkspaceTitle } from "../ui/Panel"
 
 const Container = styled.div`
   position: relative;
@@ -37,8 +45,8 @@ const Container = styled.div`
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  color: white;
-  background: #06080d;
+  color: var(--color-text);
+  background: var(--color-editor-background);
 `
 
 const Canvas = styled.canvas`
@@ -50,15 +58,6 @@ const Canvas = styled.canvas`
 
 const HiddenVideo = styled.video`
   display: none;
-`
-
-const Shade = styled.div`
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.75), transparent 24%),
-    linear-gradient(0deg, rgba(0, 0, 0, 0.82), transparent 30%);
 `
 
 const Interface = styled.div`
@@ -75,49 +74,45 @@ const Header = styled.header`
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1rem clamp(1rem, 4vw, 2rem);
-
-  h1 {
-    margin: 0;
-    font-size: clamp(1rem, 3vw, 1.5rem);
-    letter-spacing: 0.08em;
-  }
-
-  p {
-    margin: 0.3rem 0 0;
-    color: rgba(255, 255, 255, 0.68);
-    font-size: 0.78rem;
-  }
+  padding: 0.5rem 1rem;
+  min-height: 3rem;
+  box-sizing: border-box;
+  background: var(--color-background);
+  border-bottom: 1px solid var(--color-divider);
+  pointer-events: auto;
 `
 
-const ScannerLabel = styled.div<{ recording: boolean }>`
+const ScannerLabel = styled.div`
   align-self: center;
   justify-self: center;
-  padding: 1rem 1.4rem;
-  border: 1px solid
-    ${({ recording }) =>
-      recording ? "rgba(82, 255, 188, 0.8)" : "rgba(255, 255, 255, 0.2)"};
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.55);
-  box-shadow: ${({ recording }) =>
-    recording ? "0 0 32px rgba(82, 255, 188, 0.28)" : "none"};
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-divider);
+  border-radius: 0.5rem;
+  background: var(--color-background);
   text-align: center;
+
+  &[data-recording="true"] {
+    border-color: var(--color-record);
+  }
 
   strong {
     display: block;
+    font-family: var(--font-mono);
     font-size: 1.2rem;
   }
 
   span {
-    color: rgba(255, 255, 255, 0.64);
-    font-size: 0.72rem;
+    color: var(--color-text-secondary);
+    font-size: 0.7rem;
   }
 `
 
 const Footer = styled.footer`
   display: grid;
-  gap: 0.75rem;
-  padding: 1rem clamp(1rem, 4vw, 2rem);
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--color-background);
+  border-top: 1px solid var(--color-divider);
   pointer-events: auto;
 `
 
@@ -126,47 +121,37 @@ const Controls = styled.div`
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 0.65rem;
+  gap: 0.5rem;
 `
 
 const Sensitivity = styled.label`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0 0.4rem;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--color-text-secondary);
   font-size: 0.75rem;
 
   input {
     width: min(11rem, 28vw);
+    accent-color: var(--color-theme);
   }
 `
 
 const Layers = styled.div`
   display: flex;
-  min-height: 1.8rem;
+  min-height: 1.5rem;
   justify-content: center;
-  gap: 0.45rem;
+  gap: 0.4rem;
   overflow-x: auto;
 `
 
 const Layer = styled.div`
   flex: 0 0 auto;
-  padding: 0.3rem 0.65rem;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--color-divider);
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.55);
-  font-size: 0.72rem;
-`
-
-const Notice = styled.div`
-  max-width: 24rem;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid rgba(255, 180, 70, 0.45);
-  border-radius: 0.4rem;
-  color: #ffd08a;
-  background: rgba(20, 12, 2, 0.84);
-  font-size: 0.75rem;
+  background: var(--color-background);
+  font-size: 0.7rem;
 `
 
 interface ScanLayer {
@@ -178,6 +163,8 @@ const C_MAJOR = [0, 2, 4, 5, 7, 9, 11]
 
 export const ScanSequencer: FC = () => {
   const { songStore, player, synthGroup } = useStores()
+  const theme = useTheme()
+  const localized = useLocalization()
   const { setPath } = useRouter()
   const toast = useToast()
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -211,7 +198,9 @@ export const ScanSequencer: FC = () => {
 
   const currentBpm = useCallback(() => {
     const conductor = song.conductorTrack
-    return conductor ? (getTempo(conductor.events, 0) ?? DEFAULT_TEMPO) : DEFAULT_TEMPO
+    return conductor
+      ? (getTempo(conductor.events, 0) ?? DEFAULT_TEMPO)
+      : DEFAULT_TEMPO
   }, [song])
 
   useEffect(() => {
@@ -225,6 +214,10 @@ export const ScanSequencer: FC = () => {
 
     const setupCamera = async () => {
       try {
+        const availability = checkMediaAvailability()
+        if (!availability.available) {
+          throw new MediaUnavailableError(availability.reason)
+        }
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: { ideal: "environment" },
@@ -244,7 +237,7 @@ export const ScanSequencer: FC = () => {
         }
         setCameraReady(true)
       } catch (error) {
-        setNotice(handleCameraError(error))
+        setNotice(localized[handleCameraError(error) as "camera-error"])
       }
     }
 
@@ -364,7 +357,7 @@ export const ScanSequencer: FC = () => {
         const sampleX = width * config.sampleXRatio
         const triggerX = width * config.triggerRatio
         context.lineWidth = Math.max(1, pixelRatio)
-        context.strokeStyle = "rgba(255, 255, 255, 0.2)"
+        context.strokeStyle = theme.editorGridColor
 
         for (const line of linesRef.current) {
           const y = line.yRatio * height
@@ -374,7 +367,8 @@ export const ScanSequencer: FC = () => {
           context.stroke()
 
           if (line.active) {
-            context.fillStyle = `rgba(82, 255, 188, ${line.triggered ? 0.95 : 0.65})`
+            context.fillStyle = theme.greenColor
+            context.globalAlpha = line.triggered ? 0.95 : 0.65
             context.beginPath()
             context.arc(
               line.pulseX,
@@ -384,16 +378,17 @@ export const ScanSequencer: FC = () => {
               Math.PI * 2,
             )
             context.fill()
+            context.globalAlpha = 1
           }
         }
 
-        context.strokeStyle = "rgba(255, 183, 66, 0.9)"
+        context.strokeStyle = theme.yellowColor
         context.beginPath()
         context.moveTo(sampleX, 0)
         context.lineTo(sampleX, height)
         context.stroke()
 
-        context.strokeStyle = "rgba(82, 255, 188, 0.9)"
+        context.strokeStyle = theme.greenColor
         context.beginPath()
         context.moveTo(triggerX, 0)
         context.lineTo(triggerX, height)
@@ -419,6 +414,7 @@ export const ScanSequencer: FC = () => {
     loopLength,
     previewNote,
     song.timebase,
+    theme,
   ])
 
   const stopCapture = useCallback(() => {
@@ -493,38 +489,48 @@ export const ScanSequencer: FC = () => {
     <Container>
       <HiddenVideo ref={videoRef} muted playsInline />
       <Canvas ref={canvasRef} />
-      <Shade />
       <Interface>
         <Header>
           <div>
-            <h1>MUSE CAMERA SEQUENCER</h1>
-            <p>
-              Bewege Gegenstände, Hände oder Zeichnungen durch die orange
-              Erfassungslinie.
-            </p>
+            <WorkspaceTitle>
+              <Localized name="camera-sequencer" />
+            </WorkspaceTitle>
+            <WorkspaceSubtitle>
+              <Localized name="camera-sequencer-hint" />
+            </WorkspaceSubtitle>
           </div>
-          {notice && <Notice>{notice}</Notice>}
+          {notice && <Alert severity="warning">{notice}</Alert>}
         </Header>
 
-        <ScannerLabel recording={isRecording}>
+        <ScannerLabel data-recording={isRecording}>
           <strong>{isRecording ? capturedCount : layers.length}</strong>
-          <span>{isRecording ? "ERKANNTE TÖNE" : "CAMERA LAYERS"}</span>
+          <span>
+            {isRecording ? (
+              <Localized name="camera-detected-notes" />
+            ) : (
+              <Localized name="camera-layers" />
+            )}
+          </span>
         </ScannerLabel>
 
         <Footer>
           <Layers>
             {layers.map((layer, index) => (
               <Layer key={`${layer.trackId}-${index}`}>
-                Scan {index + 1}: {layer.noteCount} Töne
+                {index + 1}: {layer.noteCount}
               </Layer>
             ))}
           </Layers>
           <Controls>
             <PrimaryButton onClick={startCapture}>
-              {isRecording ? "Stop & add layer" : "Scan 4 bars"}
+              {isRecording ? (
+                <Localized name="camera-stop-add" />
+              ) : (
+                <Localized name="camera-scan" />
+              )}
             </PrimaryButton>
             <Sensitivity>
-              Empfindlichkeit
+              <Localized name="camera-sensitivity" />
               <input
                 type="range"
                 min={16}
@@ -535,10 +541,14 @@ export const ScanSequencer: FC = () => {
               />
             </Sensitivity>
             <Button onClick={undoLayer} disabled={layers.length === 0}>
-              Undo camera layer
+              <Localized name="orchestration-undo" />
             </Button>
-            <Button onClick={() => setPath("/jam")}>Back to Jam Room</Button>
-            <Button onClick={() => setPath("/track")}>Edit in Piano Roll</Button>
+            <Button onClick={() => setPath("/jam")}>
+              <Localized name="jam-room" />
+            </Button>
+            <Button onClick={() => setPath("/track")}>
+              <Localized name="piano-roll" />
+            </Button>
           </Controls>
         </Footer>
       </Interface>

@@ -1,3 +1,4 @@
+import { useTheme } from "@emotion/react"
 import styled from "@emotion/styled"
 import { type FC, type RefObject, useCallback, useEffect, useRef } from "react"
 import { videoToStage } from "../../services/jamRoom/hands/coordMap"
@@ -11,6 +12,7 @@ import {
   isFist,
   isOpenHand,
 } from "../../services/jamRoom/hands/landmarks"
+import type { Theme } from "../../theme/Theme"
 
 const OverlayCanvas = styled.canvas`
   position: absolute;
@@ -21,9 +23,12 @@ const OverlayCanvas = styled.canvas`
   z-index: 16;
 `
 
-const SIDE_COLOR: Record<string, string> = {
-  left: "#ff2e88",
-  right: "#f5a524",
+/**
+ * Hand skeletons are drawn over the camera picture, so they use the theme's
+ * accent and record colours rather than a palette of their own.
+ */
+function sideColors(theme: Theme): Record<string, string> {
+  return { left: theme.themeColor, right: theme.yellowColor }
 }
 
 interface HandOverlayProps {
@@ -47,6 +52,7 @@ export const HandOverlay: FC<HandOverlayProps> = ({
   onTheremin,
   onStatus,
 }) => {
+  const theme = useTheme()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const controllerRef = useRef<HandController | null>(null)
   const trailRef = useRef<Record<string, { x: number; y: number }[]>>({})
@@ -79,7 +85,7 @@ export const HandOverlay: FC<HandOverlayProps> = ({
     const vh = video.videoHeight
 
     for (const { side, hand } of ctrl.lastAssigned) {
-      const color = SIDE_COLOR[side]
+      const color = sideColors(theme)[side]
       const pts = hand.landmarks.map((lm) =>
         videoToStage(lm.x, lm.y, vw, vh, cv.width, cv.height),
       )
@@ -118,7 +124,7 @@ export const HandOverlay: FC<HandOverlayProps> = ({
       // joints
       for (let i = 0; i < pts.length; i++) {
         const isTip = i === 4 || i === 8 || i === 12 || i === 16 || i === 20
-        g.fillStyle = isTip ? "#ffffff" : color
+        g.fillStyle = isTip ? theme.onSurfaceColor : color
         g.beginPath()
         g.arc(pts[i].x, pts[i].y, isTip ? 4 : 2.5, 0, Math.PI * 2)
         g.fill()
@@ -130,21 +136,21 @@ export const HandOverlay: FC<HandOverlayProps> = ({
       g.beginPath()
       g.arc(pts[0].x, pts[0].y, 17, 0, Math.PI * 2)
       g.strokeStyle = fist
-        ? "#ff4d3d"
+        ? theme.recordColor
         : open
-          ? "#2dd4a7"
-          : "rgba(255,255,255,0.35)"
+          ? theme.greenColor
+          : theme.dividerColor
       g.lineWidth = 3
       g.stroke()
       g.fillStyle = color
-      g.font = "700 10px ui-monospace, Menlo, monospace"
+      g.font = `600 10px ${theme.monoFont}`
       g.fillText(
         side === "left" ? "EXPR" : "DRUM",
         pts[0].x + 24,
         pts[0].y - 16,
       )
     }
-  }, [stageRef, videoRef])
+  }, [stageRef, theme, videoRef])
 
   useEffect(() => {
     if (!enabled) return

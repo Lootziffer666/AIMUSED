@@ -23,6 +23,7 @@ import { PatternWorkspace } from "../PatternEditor/PatternWorkspace"
 import { PianoRollEditor } from "../PianoRoll/PianoRollEditor"
 import { SettingDialog } from "../SettingDialog/SettingDialog"
 import { TempoEditor } from "../TempoGraph/TempoEditor"
+import { ToneMapWorkspace } from "../ToneMap/ToneMapWorkspace"
 import { TransportPanel } from "../TransportPanel/TransportPanel"
 import { DropZone } from "./DropZone"
 
@@ -52,6 +53,7 @@ const Routes: FC = () => {
       {path === "/jam" && <JamRoom />}
       {path === "/jam-grid" && <PatternWorkspace />}
       {path === "/jam-scan" && <ScanSequencer />}
+      {path === "/tonemap" && <ToneMapWorkspace />}
     </>
   )
 }

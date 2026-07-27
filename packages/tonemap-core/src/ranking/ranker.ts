@@ -11,6 +11,7 @@ import {
   TIMBRE_AXES,
   type TimbreVector,
 } from "../schema/tonemap.ts"
+import { FEATURE_LAYOUT_VERSION } from "../schema/version.ts"
 import {
   type EncodeInput,
   encodeFeatures,
@@ -273,37 +274,78 @@ export interface ModelBackedRanker extends PatchRanker {
   isAvailable(): boolean
 }
 
+/** A loaded model. `onnxSession.ts` produces one from an ONNX Runtime. */
+export interface ScoringSession {
+  readonly contract: InferenceContract
+  score(features: FeatureVector, candidateCount: number): Promise<number[]>
+}
+
 /**
- * Optional ONNX adapter. It is *not* wired to onnxruntime here: the runtime
- * would be a platform specific dependency, and the whole system has to work
- * without a model. This adapter defines the contract and falls back to the
- * heuristic ranker whenever no session was injected.
+ * Model backed ranker.
+ *
+ * The model only ever *reorders* the heuristic shortlist, and it can only do
+ * that through `rankAsync` – inference is asynchronous, so the synchronous
+ * `rank` deliberately returns the heuristic result. That keeps every caller
+ * working with or without a model, which is the whole point: the system must
+ * not require one.
  */
 export class OnnxPatchRanker implements ModelBackedRanker {
   readonly name = "onnx-adapter-v1"
-  readonly contract: InferenceContract = {
-    featureLayoutVersion: "muse.feature-layout.v1",
-    batchSize: -1,
-    inputName: "features",
-    maskName: "mask",
-    outputName: "scores",
-  }
+  readonly contract: InferenceContract
 
-  private session: ((input: FeatureVector) => number[]) | null
+  private session: ScoringSession | null
+  private syncSession: ((input: FeatureVector) => number[]) | null
   private fallback: PatchRanker
 
   constructor(
     options: {
-      session?: (input: FeatureVector) => number[]
+      /** Asynchronous model, e.g. from `loadOnnxSession` */
+      session?: ScoringSession
+      /** Pre-computed or in-process scorer, used by `rank` as well */
+      syncSession?: (input: FeatureVector) => number[]
       fallback?: PatchRanker
+      contract?: InferenceContract
     } = {},
   ) {
     this.session = options.session ?? null
+    this.syncSession = options.syncSession ?? null
     this.fallback = options.fallback ?? new HeuristicPatchRanker()
+    this.contract = options.contract ??
+      options.session?.contract ?? {
+        featureLayoutVersion: FEATURE_LAYOUT_VERSION,
+        batchSize: -1,
+        inputName: "features",
+        maskName: "mask",
+        outputName: "scores",
+      }
   }
 
   isAvailable(): boolean {
-    return this.session !== null
+    return this.session !== null || this.syncSession !== null
+  }
+
+  private featuresFor(request: RankRequest): FeatureVector {
+    return (
+      request.features ??
+      encodeFeatures({
+        musicalFunction: request.musicalFunction,
+        register: request.register,
+        timbre: request.desiredTimbre,
+      } satisfies EncodeInput)
+    )
+  }
+
+  private applyScores(
+    baseline: PatchCandidate[],
+    scores: number[],
+  ): PatchCandidate[] {
+    return baseline
+      .map((candidate, index) => ({
+        ...candidate,
+        score: scores[index] ?? candidate.score,
+        reasons: [...candidate.reasons, `model score from ${this.name}`],
+      }))
+      .sort((a, b) => b.score - a.score || a.patchId.localeCompare(b.patchId))
   }
 
   rank(
@@ -314,23 +356,36 @@ export class OnnxPatchRanker implements ModelBackedRanker {
       { ...request, limit: request.limit ?? 5 },
       libraries,
     )
-    if (!this.session) return baseline
+    if (!this.syncSession) return baseline
+    return this.applyScores(
+      baseline,
+      this.syncSession(this.featuresFor(request)),
+    )
+  }
 
-    const features =
-      request.features ??
-      encodeFeatures({
-        musicalFunction: request.musicalFunction,
-        register: request.register,
-        timbre: request.desiredTimbre,
-      } satisfies EncodeInput)
-
-    const scores = this.session(features)
-    return baseline
-      .map((candidate, index) => ({
+  /**
+   * Ranks with the model when one is loaded. A model that fails is not fatal:
+   * the heuristic result is returned and the reason is attached to every
+   * candidate, so a broken model degrades visibly instead of silently.
+   */
+  async rankAsync(
+    request: RankRequest,
+    libraries: InstrumentLibraryManifest[],
+  ): Promise<PatchCandidate[]> {
+    const baseline = this.rank(request, libraries)
+    if (!this.session || baseline.length === 0) return baseline
+    try {
+      const scores = await this.session.score(
+        this.featuresFor(request),
+        baseline.length,
+      )
+      return this.applyScores(baseline, scores)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      return baseline.map((candidate) => ({
         ...candidate,
-        score: scores[index] ?? candidate.score,
-        reasons: [...candidate.reasons, `model score from ${this.name}`],
+        reasons: [...candidate.reasons, `model unavailable: ${message}`],
       }))
-      .sort((a, b) => b.score - a.score)
+    }
   }
 }

@@ -7,6 +7,7 @@ export type RoutePath =
   | "/jam"
   | "/jam-grid"
   | "/jam-scan"
+  | "/tonemap"
 
 export function useRouter() {
   return {

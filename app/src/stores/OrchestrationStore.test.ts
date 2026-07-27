@@ -3,8 +3,8 @@
 // rather than inventing a new one.
 import "fake-indexeddb/auto"
 import { emptySong, NoteEvent, TrackId } from "@signal-app/core"
-import { analyzeProject } from "@signal-app/orchestration-core"
 import { loadProjectFromIdb } from "@signal-app/midi-project"
+import { analyzeProject } from "@signal-app/orchestration-core"
 import { songToMuseProject } from "../services/orchestration/songAdapter"
 import { OrchestrationStore } from "./OrchestrationStore"
 

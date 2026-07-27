@@ -1,3 +1,7 @@
+import {
+  MediaUnavailableError,
+  mediaUnavailableKey,
+} from "../../helpers/secureContext"
 export const MAJOR_INTERVALS = [0, 2, 4, 5, 7, 9, 11]
 export const MINOR_INTERVALS = [0, 2, 3, 5, 7, 8, 10]
 
@@ -56,14 +60,19 @@ export function noteName(midi: number): string {
   return `${NOTE_NAMES[pc]}${octave}`
 }
 
-export function keyName(root: number, mode: "major" | "minor"): string {
-  return `${NOTE_NAMES[((root % 12) + 12) % 12]} ${mode === "major" ? "dur" : "moll"}`
+/** Root note only; the mode is a localization key the caller resolves. */
+export function keyName(root: number): string {
+  return NOTE_NAMES[((root % 12) + 12) % 12]
 }
 
+/** Returns a localization key, see `handleCameraError`. */
 export function handleMicError(error: unknown): string {
+  if (error instanceof MediaUnavailableError) {
+    return mediaUnavailableKey(error.reason)
+  }
   const e = error as { name?: string }
-  if (!e || !e.name) return "Mikrofonfehler – Jam läuft ohne Stimme weiter."
-  if (e.name === "NotAllowedError") return "Mikrofonzugriff verweigert."
-  if (e.name === "NotFoundError") return "Kein Mikrofon gefunden."
-  return "Mikrofonfehler – Jam läuft ohne Stimme weiter."
+  if (!e || !e.name) return "mic-error"
+  if (e.name === "NotAllowedError") return "mic-denied"
+  if (e.name === "NotFoundError") return "mic-not-found"
+  return "mic-error"
 }

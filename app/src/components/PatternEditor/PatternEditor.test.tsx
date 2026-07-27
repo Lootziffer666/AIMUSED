@@ -117,8 +117,8 @@ describe("PatternEditor", () => {
     const pattern = seedPattern(store)
     renderEditor(store, pattern.id)
 
-    expect(screen.getByLabelText("Pattern-Name")).toHaveValue("Test")
-    expect(screen.getByLabelText("Pattern-Länge in Schritten")).toHaveValue(16)
+    expect(screen.getByLabelText("Pattern name")).toHaveValue("Test")
+    expect(screen.getByLabelText("Steps")).toHaveValue(16)
   })
 
   it("sets a free pattern length and keeps events beyond the end marker", () => {
@@ -133,16 +133,14 @@ describe("PatternEditor", () => {
 
     renderEditor(store, pattern.id)
 
-    const steps = screen.getByLabelText("Pattern-Länge in Schritten")
+    const steps = screen.getByLabelText("Steps")
     fireEvent.change(steps, { target: { value: "13" } })
 
     const shortened = store.get(pattern.id)
     expect(shortened?.lengthTicks).toBe(13 * 120)
     // the note at step 14 survives outside the active length
     expect(shortened?.trackLayers[0].notes).toHaveLength(1)
-    expect(
-      screen.getByText(/bleiben erhalten, klingen aber nicht/),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/kept but stay silent/)).toBeInTheDocument()
 
     fireEvent.change(steps, { target: { value: "16" } })
     expect(store.get(pattern.id)?.lengthTicks).toBe(16 * 120)
@@ -154,7 +152,7 @@ describe("PatternEditor", () => {
     const pattern = seedPattern(store)
     renderEditor(store, pattern.id)
 
-    const grid = screen.getByLabelText("Pattern-Canvas")
+    const grid = screen.getByLabelText("Pattern canvas")
     // default zoom is 38px per 1/16 step
     fireEvent.pointerDown(grid, { clientX: 0, clientY: 10, pointerId: 1 })
     // dragging onto the fourth step covers steps 0..3
@@ -178,7 +176,7 @@ describe("PatternEditor", () => {
     store.save(pattern)
     renderEditor(store, pattern.id)
 
-    const block = screen.getByTitle("F4 · Klavier")
+    const block = screen.getByTitle("F4 · Piano")
     // jsdom reports a zero-sized rect; give the block a real width so the
     // gesture is recognized as a move and not as an edge resize
     vi.spyOn(block, "getBoundingClientRect").mockReturnValue({
@@ -193,7 +191,7 @@ describe("PatternEditor", () => {
       toJSON: () => ({}),
     } as DOMRect)
     fireEvent.pointerDown(block, { clientX: 19, clientY: 10, pointerId: 1 })
-    const grid = screen.getByLabelText("Pattern-Canvas")
+    const grid = screen.getByLabelText("Pattern canvas")
     fireEvent.pointerMove(grid, { clientX: 95, clientY: 10, pointerId: 1 })
     fireEvent.pointerMove(grid, { clientX: 57, clientY: 10, pointerId: 1 })
     fireEvent.pointerUp(grid, { pointerId: 1 })
@@ -209,7 +207,7 @@ describe("PatternEditor", () => {
     const pattern = seedPattern(store)
     renderEditor(store, pattern.id)
 
-    await user.click(screen.getByRole("button", { name: "Ebenen" }))
+    await user.click(screen.getByRole("button", { name: "Layers" }))
     await user.click(screen.getByRole("button", { name: "+ Instrument" }))
 
     const saved = store.get(pattern.id)
@@ -229,8 +227,8 @@ describe("PatternEditor", () => {
     store.save(seeded)
 
     renderEditor(store, seeded.id)
-    await user.click(screen.getByRole("button", { name: "Ebenen" }))
-    await user.click(screen.getAllByRole("button", { name: "sichtbar" })[0])
+    await user.click(screen.getByRole("button", { name: "Layers" }))
+    await user.click(screen.getAllByRole("button", { name: "visible" })[0])
 
     const saved = store.get(seeded.id)
     expect(saved?.trackLayers[0].visible).toBe(false)
@@ -250,7 +248,7 @@ describe("PatternEditor", () => {
     const { song } = renderEditor(store, pattern.id)
     const before = song.tracks.length
 
-    const exportButton = screen.getByRole("button", { name: "In den Song" })
+    const exportButton = screen.getByRole("button", { name: "Add to song" })
     await user.click(exportButton)
     const afterFirst = song.tracks.length
     expect(afterFirst).toBe(before + 1)
@@ -273,9 +271,11 @@ describe("PatternEditor", () => {
     const { song } = renderEditor(store, pattern.id)
     const before = song.tracks.length
 
-    await user.click(screen.getByRole("button", { name: "▶ Play" }))
-    expect(screen.getByRole("button", { name: "■ Stop" })).toBeInTheDocument()
-    await user.click(screen.getByRole("button", { name: "■ Stop" }))
+    const transport = screen.getByTestId("pattern-transport")
+    await user.click(transport)
+    expect(transport).toHaveAttribute("data-selected", "true")
+    await user.click(transport)
+    expect(transport).toHaveAttribute("data-selected", "false")
 
     expect(song.tracks.length).toBe(before)
   })
@@ -286,14 +286,14 @@ describe("PatternEditor", () => {
     const pattern = seedPattern(store)
     renderEditor(store, pattern.id)
 
-    await user.click(screen.getByRole("button", { name: "Ebenen" }))
+    await user.click(screen.getByRole("button", { name: "Layers" }))
     await user.click(screen.getByRole("button", { name: "+ Drum" }))
     expect(store.get(pattern.id)?.trackLayers).toHaveLength(3)
 
-    await user.click(screen.getByTitle("Rückgängig"))
+    await user.click(screen.getByLabelText("Undo"))
     expect(store.get(pattern.id)?.trackLayers).toHaveLength(2)
 
-    await user.click(screen.getByTitle("Wiederherstellen"))
+    await user.click(screen.getByLabelText("Redo"))
     expect(store.get(pattern.id)?.trackLayers).toHaveLength(3)
   })
 
@@ -313,8 +313,8 @@ describe("PatternEditor", () => {
     renderEditor(store, pattern.id)
 
     // select the note block on the canvas (title = pitch · layer)
-    await user.click(screen.getByTitle("C4 · Klavier"))
-    await user.click(screen.getAllByRole("button", { name: "weich ein" })[0])
+    await user.click(screen.getByTitle("C4 · Piano"))
+    await user.click(screen.getAllByRole("button", { name: "fade in" })[0])
 
     const note = store.get(pattern.id)?.trackLayers.find((l) => l.id === piano)
       ?.notes[0]
@@ -336,7 +336,7 @@ describe("PatternEditor", () => {
       </StoreContext.Provider>,
     )
 
-    await user.click(screen.getByRole("button", { name: "← Patterns" }))
+    await user.click(screen.getByRole("button", { name: "Patterns" }))
     expect(onClose).toHaveBeenCalled()
     expect(store.get(pattern.id)).toBeDefined()
   })

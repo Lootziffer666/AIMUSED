@@ -54,7 +54,7 @@ export function createLayer(
   const kind = options.kind ?? "melodic"
   return {
     id: makeId("layer"),
-    name: options.name ?? (kind === "melodic" ? "Instrument" : "Percussion"),
+    name: options.name ?? (kind === "melodic" ? "Piano" : "Percussion"),
     kind,
     color: options.color ?? LAYER_COLORS[index % LAYER_COLORS.length],
     program: options.program,
@@ -83,13 +83,13 @@ export function createPattern(options?: {
   const now = new Date().toISOString()
   return {
     id: makeId("pattern"),
-    name: options?.name ?? "Neues Pattern",
+    name: options?.name ?? "New pattern",
     startTick: 0,
     lengthTicks: step * steps,
     gridDivision,
     timebase,
     trackLayers: options?.layers ?? [
-      createLayer({ name: "Klavier", kind: "melodic", program: 0 }, 0),
+      createLayer({ name: "Piano", kind: "melodic", program: 0 }, 0),
     ],
     createdAt: now,
     updatedAt: now,

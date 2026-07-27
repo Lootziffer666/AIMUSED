@@ -10,14 +10,17 @@ import type {
   MusePatternNote,
   MusePatternTrackLayer,
 } from "../../entities/pattern/MusePattern"
+import { Localized, useLocalization } from "../../localize/useLocalization"
 import {
   createEnvelope,
   ENVELOPE_PRESETS,
   moveEnvelopePoint,
-  PRESET_LABELS,
+  PRESET_LABEL_KEYS,
   sampleEnvelopeCurve,
   setEnvelopeCurve,
 } from "../../services/pattern/envelope"
+import { Button } from "../ui/Button"
+import { Chip, EmptyState } from "../ui/Panel"
 import { pitchName } from "./PatternCanvas"
 
 /**
@@ -30,94 +33,73 @@ const Drawer = styled.section`
   display: flex;
   flex-shrink: 0;
   flex-wrap: wrap;
-  gap: 18px;
-  padding: 12px 16px 14px;
-  border-top: 1px solid rgba(167, 139, 250, 0.2);
-  background: rgba(16, 12, 30, 0.9);
+  gap: 1.25rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--color-divider);
+  background: var(--color-background);
 `
 
 const Column = styled.div`
   display: flex;
-  min-width: 210px;
+  min-width: 13rem;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.4rem;
 `
 
 const Head = styled.div`
   display: flex;
-  gap: 10px;
+  gap: 0.5rem;
   align-items: center;
-  color: #c4b5fd;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  font-size: 0.7rem;
+  font-weight: 600;
 `
 
 const Curve = styled.svg`
   width: 100%;
-  height: 92px;
-  border: 1px solid rgba(167, 139, 250, 0.24);
-  border-radius: 12px;
-  background: rgba(10, 8, 20, 0.75);
+  height: 5rem;
+  border: 1px solid var(--color-divider);
+  border-radius: 0.3rem;
+  background: var(--color-editor-background);
   touch-action: none;
 `
 
 const Presets = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-`
-
-const PresetButton = styled.button<{ on: boolean }>`
-  padding: 4px 9px;
-  border: 1px solid
-    ${({ on }) => (on ? "#a78bfa" : "rgba(255,255,255,0.14)")};
-  border-radius: 999px;
-  color: ${({ on }) => (on ? "#ede9fe" : "rgba(255,255,255,0.55)")};
-  background: ${({ on }) => (on ? "rgba(167,139,250,0.24)" : "transparent")};
-  font-size: 10px;
-  cursor: pointer;
+  gap: 0.25rem;
 `
 
 const Field = styled.label`
   display: flex;
-  gap: 8px;
+  gap: 0.5rem;
   align-items: center;
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 11px;
+  color: var(--color-text-secondary);
+  font-size: 0.7rem;
 
   input[type="range"] {
     flex: 1;
-    accent-color: #a78bfa;
+    accent-color: var(--color-theme);
   }
 `
 
 const Value = styled.span`
-  min-width: 34px;
-  color: #ede9fe;
-  font-family: ui-monospace, Menlo, monospace;
-  font-size: 11px;
+  min-width: 2.2rem;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
   text-align: right;
 `
 
-const DeleteButton = styled.button`
-  padding: 7px 12px;
-  border: 1px solid rgba(251, 113, 133, 0.5);
-  border-radius: 9px;
-  color: #fda4af;
-  background: rgba(251, 113, 133, 0.12);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  cursor: pointer;
-`
+const DeleteButton = styled(Button)`
+  height: 1.5rem;
+  padding: 0 0.5rem;
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
 
-const Empty = styled.div`
-  padding: 6px 2px;
-  color: rgba(255, 255, 255, 0.45);
-  font-size: 12px;
+  &:hover {
+    color: var(--color-red);
+  }
 `
 
 interface EnvelopeEditorProps {
@@ -167,9 +149,9 @@ const EnvelopeEditor: FC<EnvelopeEditorProps> = ({
       <Head>
         <span>{title}</span>
         {envelope && (
-          <PresetButton on={false} onClick={() => onChange(undefined)}>
-            zurücksetzen
-          </PresetButton>
+          <Chip onClick={() => onChange(undefined)}>
+            <Localized name="pattern-envelope-reset" />
+          </Chip>
         )}
       </Head>
       <Curve
@@ -199,7 +181,7 @@ const EnvelopeEditor: FC<EnvelopeEditorProps> = ({
             cx={point.t * 100}
             cy={100 - point.v * 100}
             r="3.2"
-            fill="#ffffff"
+            fill="var(--color-background)"
             stroke={color}
             strokeWidth="2"
             vectorEffect="non-scaling-stroke"
@@ -214,17 +196,17 @@ const EnvelopeEditor: FC<EnvelopeEditorProps> = ({
       </Curve>
       <Presets>
         {ENVELOPE_PRESETS.map((preset) => (
-          <PresetButton
+          <Chip
             key={preset}
-            on={envelope?.preset === preset}
+            data-selected={envelope?.preset === preset}
             onClick={() => onChange(createEnvelope(preset))}
           >
-            {PRESET_LABELS[preset]}
-          </PresetButton>
+            <Localized name={PRESET_LABEL_KEYS[preset]} />
+          </Chip>
         ))}
       </Presets>
       <Field>
-        Bogen
+        <Localized name="pattern-envelope-bend" />
         <input
           type="range"
           min={-100}
@@ -262,13 +244,14 @@ export const EventDrawer: FC<EventDrawerProps> = ({
   onSetEnvelope,
   onDelete,
 }) => {
+  const localized = useLocalization()
+
   if (!layer || !note) {
     return (
       <Drawer>
-        <Empty>
-          Wähle ein Ereignis auf dem Canvas, um Lautstärke und Ausdruck zu
-          gestalten.
-        </Empty>
+        <EmptyState>
+          <Localized name="pattern-no-event" />
+        </EmptyState>
       </Drawer>
     )
   }
@@ -282,10 +265,12 @@ export const EventDrawer: FC<EventDrawerProps> = ({
           <span>
             {layer.kind === "melodic" ? pitchName(note.noteNumber) : layer.name}
           </span>
-          <DeleteButton onClick={onDelete}>Löschen</DeleteButton>
+          <DeleteButton onClick={onDelete}>
+            <Localized name="delete" />
+          </DeleteButton>
         </Head>
         <Field>
-          Anschlag
+          <Localized name="pattern-velocity" />
           <input
             type="range"
             min={1}
@@ -296,7 +281,7 @@ export const EventDrawer: FC<EventDrawerProps> = ({
           <Value>{note.velocity}</Value>
         </Field>
         <Field>
-          Länge
+          <Localized name="pattern-length" />
           <input
             type="range"
             min={1}
@@ -311,14 +296,14 @@ export const EventDrawer: FC<EventDrawerProps> = ({
       </Column>
 
       <EnvelopeEditor
-        title="Lautstärke"
-        color="#a78bfa"
+        title={localized["pattern-volume-curve"]}
+        color="var(--color-theme)"
         envelope={note.volumeEnvelope}
         onChange={(envelope) => onSetEnvelope("volumeEnvelope", envelope)}
       />
       <EnvelopeEditor
-        title="Ausdruck"
-        color="#f472b6"
+        title={localized["pattern-expression-curve"]}
+        color="var(--color-yellow)"
         envelope={note.expressionEnvelope}
         onChange={(envelope) => onSetEnvelope("expressionEnvelope", envelope)}
       />

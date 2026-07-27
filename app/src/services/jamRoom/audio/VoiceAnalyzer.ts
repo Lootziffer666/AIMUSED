@@ -1,3 +1,7 @@
+import {
+  checkMediaAvailability,
+  MediaUnavailableError,
+} from "../../../helpers/secureContext"
 import type { JamAudioEngine } from "./JamAudioEngine"
 import {
   autoCorrelate,
@@ -33,6 +37,10 @@ export class VoiceAnalyzer {
   }
 
   static async start(engine: JamAudioEngine): Promise<VoiceAnalyzer> {
+    const availability = checkMediaAvailability()
+    if (!availability.available) {
+      throw new MediaUnavailableError(availability.reason)
+    }
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: false,

@@ -4,6 +4,10 @@ import type {
   MuseTrackRole,
   PerformanceSource,
 } from "../../entities/performance/MusePerformanceTake"
+import {
+  MediaUnavailableError,
+  mediaUnavailableKey,
+} from "../../helpers/secureContext"
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value))
@@ -158,9 +162,7 @@ export function shouldGenerateAccompaniment(
 ): boolean {
   return takes.some(
     (take) =>
-      take.role === "melody" &&
-      take.confidence > 0.5 &&
-      take.notes.length > 0,
+      take.role === "melody" && take.confidence > 0.5 && take.notes.length > 0,
   )
 }
 
@@ -176,20 +178,26 @@ export function protectOriginalTakes(
   return [...preserved, ...added]
 }
 
+/**
+ * Device failures name a localization key, not a sentence: the service has no
+ * business deciding which language the user reads.
+ */
 export function handleCameraError(error: unknown): string {
-  if (!(error instanceof DOMException)) {
-    return "Kamerafehler. Jam Room läuft ohne Video weiter."
+  if (error instanceof MediaUnavailableError) {
+    return mediaUnavailableKey(error.reason)
   }
-  if (error.name === "NotAllowedError") return "Kamerazugriff verweigert."
-  if (error.name === "NotFoundError") return "Keine Kamera gefunden."
-  return "Kamerafehler. Jam Room läuft ohne Video weiter."
+  if (!(error instanceof DOMException)) return "camera-error"
+  if (error.name === "NotAllowedError") return "camera-denied"
+  if (error.name === "NotFoundError") return "camera-not-found"
+  return "camera-error"
 }
 
 export function handleMicrophoneError(error: unknown): string {
-  if (!(error instanceof DOMException)) {
-    return "Mikrofonfehler. Gesten und Schlagflächen bleiben verfügbar."
+  if (error instanceof MediaUnavailableError) {
+    return mediaUnavailableKey(error.reason)
   }
-  if (error.name === "NotAllowedError") return "Mikrofonzugriff verweigert."
-  if (error.name === "NotFoundError") return "Kein Mikrofon gefunden."
-  return "Mikrofonfehler. Gesten und Schlagflächen bleiben verfügbar."
+  if (!(error instanceof DOMException)) return "mic-error"
+  if (error.name === "NotAllowedError") return "mic-denied"
+  if (error.name === "NotFoundError") return "mic-not-found"
+  return "mic-error"
 }

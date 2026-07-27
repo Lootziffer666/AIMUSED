@@ -66,11 +66,34 @@ nicht die Quelle der Wahrheit.
    privaten Verzeichnisse liegt.
 4. `align` erzeugt die Alignment Map, `tonemap` das Projekt.
 
-Unterstützte Audioformate laut Manifest: WAV, FLAC, MP3, OGG, Opus.
-**Mitgeliefert ist nur ein WAV-Decoder.** Für alles andere meldet die
-Decoder-Registry verständlich, dass kein Decoder registriert ist – ein Host
-(Electron, Browser, ffmpeg-Adapter) kann jederzeit einen ergänzen, ohne dass
-die Analyse angefasst wird.
+### Audioformate und Decoder
+
+Unterstützte Formate laut Manifest: WAV, FLAC, MP3, OGG, Opus.
+
+| Format | Decoder | Woher |
+| --- | --- | --- |
+| WAV | `wavDecoder` | nativ in `audio/pcm.ts`, PCM 8/16/24/32 Bit und Float |
+| FLAC | `flacDecoder` | nativ in `audio/flac.ts` |
+| MP3 | `mp3Decoder` | `mpg123-decoder` (MIT, WASM), lazy geladen |
+| OGG Vorbis | `oggVorbisDecoder` | `@wasm-audio-decoders/ogg-vorbis` (MIT, WASM), lazy geladen |
+| Opus | – | im Browser über die Web-Audio-Adapter der App |
+
+Die **verlustfreien** Formate werden selbst dekodiert. Das ist kein Ehrgeiz:
+verlustfrei heißt, es gibt genau eine richtige Antwort, und die lässt sich
+prüfen – der FLAC-Decoder wird gegen einen eigenen Encoder bit-genau
+round-trip-getestet, über alle Subframe-Typen (constant, verbatim, fixed 0–4,
+LPC), Rice- und Rice2-Residuen, wasted bits, 8/16/24 Bit und alle drei
+Stereo-Dekorrelationen.
+
+Die **verlustbehafteten** Formate gehen bewusst an die Referenz-Implementierungen.
+Ein selbstgeschriebener MP3-Decoder, der fast richtig ist, klingt gut und misst
+falsch – das schlechteste denkbare Verhalten für eine Analysepipeline.
+
+`createDefaultDecoderRegistry()` enthält nur die verlustfreien Decoder.
+`registerLossyDecoders(registry)` ergänzt MP3 und OGG; die CLI tut das, die App
+registriert stattdessen Web-Audio-Adapter und lädt die WASM-Pakete nie.
+Asynchrone Decoder erreicht man über `decodeAsync`; `decode` bleibt synchron
+und sagt es deutlich, wenn ein Decoder asynchron ist.
 
 ## Alignment
 
@@ -165,9 +188,107 @@ Der Contract des Adapters:
 ```
 
 Das Modell verarbeitet **keine Audiodateien**, sondern aggregierte Features.
-Ohne Modell rankt `HeuristicPatchRanker` – `OnnxPatchRanker` fällt darauf
-zurück, solange keine Session injiziert ist. Es wird bewusst **kein** Modell
-mittrainiert oder mitgeliefert.
+
+### Ein Modell benutzen
+
+```
+node --experimental-strip-types packages/tonemap-core/src/cli/main.ts \
+  rank projekt.json --library manifest.json --model modell.onnx
+```
+
+`loadOnnxSession` löst die ONNX Runtime zur Laufzeit auf – erst
+`onnxruntime-node`, dann `onnxruntime-web`. Keins von beiden ist eine
+Abhängigkeit dieses Pakets: fehlt die Runtime, nennt die Fehlermeldung die zu
+installierenden Pakete und weist darauf hin, dass Ranking auch ohne Modell
+funktioniert.
+
+Vor der ersten Inferenz wird geprüft:
+
+- die Feature-Layout-Version des Contracts gegen die des Builds
+- ob das Modell die Eingänge `features` und `mask` und den Ausgang `scores` hat
+- ob die Anzahl der zurückgegebenen Scores zu den Kandidaten passt
+
+Die Tensoren sind `float32` mit der Form `[1, 97]`. Das Modell **sortiert nur
+um**: die Kandidatenliste kommt vom heuristischen Ranker, `rankAsync` bewertet
+sie neu. `rank` bleibt synchron und liefert bewusst das heuristische Ergebnis.
+Fällt das Modell aus, wird nicht geworfen – die heuristische Reihenfolge bleibt
+und jeder Kandidat trägt `model unavailable: <Grund>` in seinen Begründungen.
+
+### Das Referenzmodell
+
+`fixtures/tonemap/synthetic/reranker-v1.onnx` (3,6 kB) erfüllt genau diesen
+Vertrag: Eingänge `features` und `mask` als `float32 [1, 97]`, Ausgang `scores`
+als `float32 [1, 8]`. Erzeugt wird es reproduzierbar von
+`fixtures/tonemap/synthetic/make-reranker.py` (fester Seed).
+
+Es ist **untrainiert** – die Gewichte sind eine feste Zufallsprojektion. Es
+beweist, dass die Verdrahtung stimmt, nicht dass es musikalisch urteilt. Ein
+Modell mit Urteilsvermögen kommt nur mit Trainingsdaten, und die entstehen aus
+den Entscheidungen im Orchestrierungs-Vergleich.
+
+Die ONNX Runtime ist **keine** Abhängigkeit dieses Pakets: 130 MB soll niemand
+laden müssen, nur um die Tests laufen zu lassen. `onnxRuntime.test.ts` läuft
+gegen die echte Runtime und das echte Modell und überspringt sich sonst
+sichtbar:
+
+```
+npm i -D onnxruntime-web -w @signal-app/tonemap-core
+npm test -w @signal-app/tonemap-core
+```
+
+`onnxSession.test.ts` deckt dieselben Codepfade gegen eine injizierte
+Fake-Runtime ab und läuft immer.
+
+### Grenze des aktuellen Vertrags
+
+Das Modell sieht die **Anfrage**, nicht die Kandidaten. Es kann also lernen
+„bei dieser Art Stimme nimm eher Position 2 der heuristischen Liste" – eine
+schwache Umsortierung mit Positions-Prior, mehr nicht. Ein echter Re-Ranker
+bräuchte Merkmale **pro Kandidat**; das wäre Feature-Layout v2 und damit eine
+neue Layout-Version, keine stille Änderung dieser.
+
+Es wird bewusst **kein trainiertes** Modell mitgeliefert.
+
+## Rendering
+
+Ein Plan wird nicht direkt zu Audio, sondern zu **Jobs**: welche Dateien
+geschrieben, welcher Befehl ausgeführt und welche Ausgabe erwartet wird.
+`tonemap-core` startet dabei bewusst **keinen Prozess** – das gehört dem Host.
+Genau deshalb lässt sich ein Render planen, lesen und prüfen, ohne dass ein
+Renderer installiert ist.
+
+```
+node --experimental-strip-types packages/tonemap-core/src/cli/main.ts \
+  render projekt.json --plan plan.json --library manifest.json \
+  [--adapter midi|sfizz|fluidsynth] [--out render/] [--soundfont gm.sf2] [--dry-run]
+```
+
+| Adapter | Braucht | Ergebnis |
+| --- | --- | --- |
+| `midi` | nichts | `arrangement.mid` plus ein Stem pro Stimme |
+| `sfizz` | `sfizz_render`, SFZ-Bibliothek mit gesetztem `rootPath` | ein WAV pro Stimme |
+| `fluidsynth` | `fluidsynth`, eine SoundFont | ein WAV für das ganze Arrangement |
+| in der App | nichts | Plan-Spuren im Song, spielbar über MUSEs eigenen Player |
+
+Gemeinsame Grundlage ist `planToMidi`: es vergibt die Kanäle (Kanal 10 bleibt
+für Perkussion reserviert), schreibt Bank- und Programmwechsel des gewählten
+Patches, hält Keyswitches über die gesamte Stimme und setzt eine
+Prominenz-Hüllkurve als CC 7 um. Tempo, Takt- und Vorzeichnung werden aus der
+Quelldatei übernommen, damit ein Stem zur Referenzaufnahme passt. **Die
+Quelldatei selbst wird nie verändert.**
+
+Ein Job, dessen Patch sich nicht auflösen lässt, verschwindet nicht – er wird
+mit `issues` beschrieben: fehlender `rootPath`, Patch ohne SFZ, Stimme ohne
+gewähltes Patch, mehr Stimmen als MIDI-Kanäle. Stems mit gleichem Namen
+bekommen einen Zähler, damit keiner den anderen überschreibt.
+
+### Render-Manifest
+
+`render-manifest.json` hält fest, was gerendert wurde: Adapter, Plan-ID,
+gewählte Patches **samt der Begründungen des Rankers**, Bibliotheksversionen,
+Ausgabepfade und offene Punkte. Der `planFingerprint` ist ein Inhalts-Hash über
+alles, was den Klang ändert – ändert sich der Plan danach, meldet `isStale`,
+dass das Audio veraltet ist.
 
 ## Training-Record-Format
 

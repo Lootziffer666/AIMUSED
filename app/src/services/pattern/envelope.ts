@@ -67,15 +67,16 @@ export const ENVELOPE_PRESETS: Exclude<MuseEnvelopePreset, "custom">[] = [
   "accent",
 ]
 
-export const PRESET_LABELS: Record<MuseEnvelopePreset, string> = {
-  direct: "direkt",
-  "fade-in": "weich ein",
-  "fade-out": "weich aus",
-  swell: "anschwellen",
-  decay: "abschwellen",
-  accent: "Akzent",
-  custom: "eigen",
-}
+/** Localization key per preset – the UI resolves them, the service does not. */
+export const PRESET_LABEL_KEYS = {
+  direct: "pattern-preset-direct",
+  "fade-in": "pattern-preset-fade-in",
+  "fade-out": "pattern-preset-fade-out",
+  swell: "pattern-preset-swell",
+  decay: "pattern-preset-decay",
+  accent: "pattern-preset-accent",
+  custom: "pattern-preset-custom",
+} as const satisfies Record<MuseEnvelopePreset, string>
 
 export function createEnvelope(
   preset: Exclude<MuseEnvelopePreset, "custom"> = "direct",

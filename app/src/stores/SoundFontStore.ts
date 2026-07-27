@@ -42,9 +42,18 @@ const defaultSoundFonts: (SoundFontItem & Metadata & { id: number })[] =
       ]
     : [
         {
+          // Bundled with the build, so a self-hosted MUSE needs no internet at
+          // all – which is the point when the machine is a home server.
           id: -999, // Use negative number to avoid conflict with user saved soundfonts
           type: "remote",
           name: "A320U.sf2 (Signal Factory Sound)",
+          url: new URL("soundfonts/A320U.sf2", document.baseURI).href,
+        },
+        {
+          // Fallback for a deployment that did not copy the asset
+          id: -998,
+          type: "remote",
+          name: "A320U.sf2 (CDN)",
           url: "https://cdn.jsdelivr.net/gh/ryohey/signal@4569a31/public/A320U.sf2",
         },
       ]

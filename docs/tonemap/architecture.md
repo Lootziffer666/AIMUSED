@@ -41,13 +41,16 @@ packages/tonemap-core/src/
   schema/       ToneMap IR, Versionierung, Migration, Validierung
   midi/         verlustarmer Event-Graph, Round-Trip, Debugformate
   pairing/      Paired-Source-Manifest, Schutz privater Assets
-  audio/        PCM, Decoder-Interface, deterministische Feature-Extraktion
+  audio/        PCM, Decoder-Registry (WAV + FLAC nativ, MP3/OGG lazy),
+                deterministische Feature-Extraktion
   alignment/    MIDI/Audio-Alignment mit Ankern und Konfidenz
   motifs/       Stimmen, Phrasen, Motive, Beziehungen
   tonemap/      Zusammenführung: Observations
   orchestration/ nicht-destruktiver Transformationsplan
   libraries/    Library-Manifeste, SFZ-Scanner
-  ranking/      Feature-Layout, heuristischer Ranker, ONNX-Adapter
+  ranking/      Feature-Layout, heuristischer Ranker, ONNX-Runtime-Binding
+  render/       Plan → MIDI, Render-Adapter (midi/sfizz/fluidsynth),
+                Render-Manifest mit Plan-Fingerprint
   training/     Trainingsdatensätze
   cli/          muse-tonemap
 schemas/tonemap/  JSON Schemas + feature-layout-v1.json
