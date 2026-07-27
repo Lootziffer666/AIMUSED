@@ -5,6 +5,7 @@ import ChevronLeft from "mdi-react/ChevronLeftIcon"
 import DotsHorizontal from "mdi-react/DotsHorizontalIcon"
 import Pause from "mdi-react/PauseIcon"
 import Play from "mdi-react/PlayIcon"
+import Record from "mdi-react/RecordIcon"
 import Redo from "mdi-react/RedoIcon"
 import Undo from "mdi-react/UndoIcon"
 import { toJS } from "mobx"
@@ -24,9 +25,16 @@ import {
   type MusePatternLayerKind,
   stepCount,
 } from "../../entities/pattern/MusePattern"
+import { noteNameWithOctString } from "../../helpers/noteNumberString"
 import { useStores } from "../../hooks/useStores"
 import { Localized, useLocalization } from "../../localize/useLocalization"
 import { getJamAudioEngine } from "../../services/jamRoom/audio/JamAudioEngine"
+import {
+  codesByNote,
+  labelForCode,
+  noteForCode,
+  readKeyboardLayout,
+} from "../../services/pattern/keyboardPiano"
 import { PatternPlayer } from "../../services/pattern/PatternPlayer"
 import {
   canRedo,
@@ -60,6 +68,7 @@ import {
   trimOverhang,
   updateLayer,
 } from "../../services/pattern/patternOps"
+import { PatternRecording } from "../../services/pattern/patternRecorder"
 import { applyPatternToSong } from "../../services/pattern/patternSongAdapter"
 import { ToolbarButton } from "../Toolbar/ToolbarButton"
 import {
@@ -78,7 +87,9 @@ import {
 } from "../ui/Panel"
 import { EventDrawer } from "./EventDrawer"
 import { DRUM_ZONES, LayerRail, MELODIC_INSTRUMENTS } from "./LayerRail"
+import { PaperKeys } from "./PaperKeys"
 import { type CanvasGesture, PatternCanvas } from "./PatternCanvas"
+import { PianoKeyboard } from "./PianoKeyboard"
 import { SongMakerGrid } from "./SongMakerGrid"
 import { SongMakerLayerBar } from "./SongMakerLayerBar"
 
@@ -144,6 +155,33 @@ const MoreButton = styled(ToolbarButton)`
 
   @media (max-width: 700px) {
     display: flex;
+  }
+`
+
+/** Armed recording has to be unmistakable, so it is the one red control. */
+const RecordButton = styled(ToolbarButton)`
+  &[data-selected="true"] {
+    color: var(--color-red);
+  }
+`
+
+const PianoBar = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0.3rem 0.5rem;
+  /* on a phone the row is wider than the screen: it scrolls, it does not wrap
+     into three lines that eat the grid above it */
+  overflow-x: auto;
+  border-top: 1px solid var(--color-divider);
+  background: var(--color-background);
+  color: var(--color-text-secondary);
+  font-size: 0.7rem;
+  white-space: nowrap;
+
+  > * {
+    flex-shrink: 0;
   }
 `
 
@@ -231,9 +269,37 @@ export const PatternEditor: FC<PatternEditorProps> = ({
   const [gridKey, setGridKey] = useState(0)
   const [gridMode, setGridMode] = useState<"major" | "minor">("major")
 
+  /**
+   * The piano. It sits under the grid rather than on a page of its own, so a
+   * note that came out wrong can be fixed by tapping the grid instead of
+   * playing the whole take again.
+   */
+  const [pianoOpen, setPianoOpen] = useState(true)
+  /** Screen keys, or a keyboard on paper read through the camera. */
+  const [pianoSource, setPianoSource] = useState<"screen" | "paper">("screen")
+  const [pianoBase, setPianoBase] = useState(48)
+  const [activeNotes, setActiveNotes] = useState<ReadonlySet<number>>(
+    () => new Set(),
+  )
+  const [isRecording, setIsRecording] = useState(false)
+  const [quantizeRecording, setQuantizeRecording] = useState(true)
+  const [keyboardLayout, setKeyboardLayout] = useState<ReadonlyMap<
+    string,
+    string
+  > | null>(null)
+  /** A phone gets two octaves of finger-sized keys instead of seven thin ones. */
+  const [isNarrow, setIsNarrow] = useState(
+    () => typeof window !== "undefined" && window.innerWidth < 900,
+  )
+
   const playerRef = useRef<PatternPlayer | null>(null)
   const patternRef = useRef(pattern)
   patternRef.current = pattern
+  const recording = useRef(new PatternRecording())
+  const isRecordingRef = useRef(isRecording)
+  isRecordingRef.current = isRecording
+  const quantizeRef = useRef(quantizeRecording)
+  quantizeRef.current = quantizeRecording
 
   const bpm = useMemo(() => {
     const conductor = songStore.song.conductorTrack
@@ -406,6 +472,215 @@ export const PatternEditor: FC<PatternEditorProps> = ({
     patternStore.save(toJS(pattern))
   }, [pattern, patternStore])
 
+  // ---- piano, recording and MIDI ----
+  useEffect(() => {
+    // not every environment the component renders in has matchMedia; the
+    // initial width check already gave a usable answer
+    if (typeof window.matchMedia !== "function") return
+    const query = window.matchMedia("(max-width: 899px)")
+    const onChange = () => setIsNarrow(query.matches)
+    onChange()
+    query.addEventListener("change", onChange)
+    return () => query.removeEventListener("change", onChange)
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    readKeyboardLayout().then((layout) => {
+      if (!cancelled) setKeyboardLayout(layout)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  /**
+   * The physical key printed on each note. Only the full keyboard shows them –
+   * on two finger-sized octaves they would be in the way.
+   */
+  const codeLabels = useMemo(() => {
+    const map = new Map<number, string>()
+    for (const [note, code] of codesByNote(pianoBase)) {
+      map.set(note, labelForCode(code, keyboardLayout))
+    }
+    return map
+  }, [keyboardLayout, pianoBase])
+
+  /**
+   * Recording writes note by note while the loop keeps running, so two releases
+   * can land between two renders. Applying the change to the history's own
+   * present instead of to the captured `pattern` is what keeps the second one
+   * from overwriting the first.
+   */
+  const applyCommit = useCallback((fn: (p: MusePattern) => MusePattern) => {
+    setHistory((h) => pushHistory(h, fn(h.present)))
+  }, [])
+
+  const currentTick = useCallback(
+    () => Math.round(playerRef.current?.currentTick() ?? 0),
+    [],
+  )
+
+  const recordOptions = useCallback(
+    () => ({
+      lengthTicks: patternRef.current.lengthTicks,
+      step: gridTicks(patternRef.current),
+      quantize: quantizeRef.current,
+    }),
+    [],
+  )
+
+  const startNote = useCallback(
+    (noteNumber: number, velocity: number) => {
+      const layerId = melodicLayerId
+      const layer = patternRef.current.trackLayers.find((l) => l.id === layerId)
+      engine.ensureContext()
+      const instance = ensurePlayer()
+      const channel = instance.channelForLayer(layerId)
+      if (synth.isLoaded) {
+        synthGroup.activate()
+        player.sendEvent({
+          type: "channel",
+          subtype: "programChange",
+          channel,
+          value: layer?.program ?? 0,
+        })
+        player.sendEvent({
+          type: "channel",
+          subtype: "noteOn",
+          channel,
+          noteNumber,
+          velocity,
+        })
+      } else {
+        // the fallback voices have no note-off, so they get a fixed length
+        engine.playSynthNoteAt(engine.now(), noteNumber, velocity, 0.6, "lead")
+      }
+      setActiveNotes((notes) => new Set(notes).add(noteNumber))
+      if (isRecordingRef.current) {
+        recording.current.start(noteNumber, currentTick(), velocity)
+      }
+    },
+    [
+      currentTick,
+      engine,
+      ensurePlayer,
+      melodicLayerId,
+      player,
+      synth,
+      synthGroup,
+    ],
+  )
+
+  const stopNote = useCallback(
+    (noteNumber: number) => {
+      const layerId = melodicLayerId
+      if (synth.isLoaded && playerRef.current) {
+        player.sendEvent({
+          type: "channel",
+          subtype: "noteOff",
+          channel: playerRef.current.channelForLayer(layerId),
+          noteNumber,
+          velocity: 0,
+        })
+      }
+      setActiveNotes((notes) => {
+        const next = new Set(notes)
+        next.delete(noteNumber)
+        return next
+      })
+      const recorded = recording.current.finish(
+        noteNumber,
+        currentTick(),
+        recordOptions(),
+      )
+      if (recorded) {
+        applyCommit(
+          (p) =>
+            addNote(ensureLayerVisible(p, layerId), layerId, recorded).pattern,
+        )
+      }
+    },
+    [applyCommit, currentTick, melodicLayerId, player, recordOptions, synth],
+  )
+
+  const startNoteRef = useRef(startNote)
+  startNoteRef.current = startNote
+  const stopNoteRef = useRef(stopNote)
+  stopNoteRef.current = stopNote
+
+  /**
+   * A MIDI keyboard plays the layer being edited, not the selected song track,
+   * so the app-wide monitor steps aside while this view is open – otherwise
+   * every note sounds twice on two instruments.
+   */
+  useEffect(() => {
+    if (!pianoOpen) return
+    const monitor = rootStore.midiMonitor
+    const wasEnabled = monitor.enabled
+    monitor.enabled = false
+    const unsubscribe = rootStore.midiInput.on("midiMessage", (e) => {
+      const status = e.data[0] & 0xf0
+      const noteNumber = e.data[1]
+      const velocity = e.data[2]
+      if (status === 0x90 && velocity > 0) {
+        startNoteRef.current(noteNumber, velocity)
+      } else if (status === 0x80 || (status === 0x90 && velocity === 0)) {
+        stopNoteRef.current(noteNumber)
+      }
+    })
+    return () => {
+      unsubscribe()
+      monitor.enabled = wasEnabled
+    }
+  }, [pianoOpen, rootStore])
+
+  /** The computer keyboard is the third way into the same two callbacks. */
+  useEffect(() => {
+    if (!pianoOpen) return
+    const held = new Set<string>()
+    const isTyping = (target: EventTarget | null) => {
+      const element = target as HTMLElement | null
+      return (
+        element !== null &&
+        (element.tagName === "INPUT" ||
+          element.tagName === "SELECT" ||
+          element.isContentEditable)
+      )
+    }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return
+      if (isTyping(e.target)) return
+      const note = noteForCode(e.code, pianoBase)
+      if (note === undefined || held.has(e.code)) return
+      held.add(e.code)
+      e.preventDefault()
+      startNoteRef.current(note, 96)
+    }
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (!held.delete(e.code)) return
+      const note = noteForCode(e.code, pianoBase)
+      if (note !== undefined) stopNoteRef.current(note)
+    }
+    // a key held while the window loses focus would sound for ever
+    const onBlur = () => {
+      for (const code of held) {
+        const note = noteForCode(code, pianoBase)
+        if (note !== undefined) stopNoteRef.current(note)
+      }
+      held.clear()
+    }
+    window.addEventListener("keydown", onKeyDown)
+    window.addEventListener("keyup", onKeyUp)
+    window.addEventListener("blur", onBlur)
+    return () => {
+      window.removeEventListener("keydown", onKeyDown)
+      window.removeEventListener("keyup", onKeyUp)
+      window.removeEventListener("blur", onBlur)
+      onBlur()
+    }
+  }, [pianoBase, pianoOpen])
+
   // ---- canvas callbacks ----
   const handleCreateNote = useCallback(
     (layerId: string, startTick: number, noteNumber: number) => {
@@ -498,9 +773,25 @@ export const PatternEditor: FC<PatternEditorProps> = ({
   )
 
   // ---- toolbar actions ----
+  /** Keys still down when the music stops still become notes. */
+  const closeOpenNotes = useCallback(() => {
+    const notes = recording.current.finishAll(currentTick(), recordOptions())
+    if (notes.length === 0) return
+    const layerId = melodicLayerId
+    applyCommit((p) =>
+      notes.reduce(
+        (acc, note) =>
+          addNote(ensureLayerVisible(acc, layerId), layerId, note).pattern,
+        p,
+      ),
+    )
+  }, [applyCommit, currentTick, melodicLayerId, recordOptions])
+
   const togglePlay = useCallback(() => {
     const instance = ensurePlayer()
     if (instance.isPlaying) {
+      closeOpenNotes()
+      setIsRecording(false)
       instance.stop()
       setIsPlaying(false)
       setPlayheadTick(null)
@@ -508,7 +799,23 @@ export const PatternEditor: FC<PatternEditorProps> = ({
       instance.start()
       setIsPlaying(true)
     }
-  }, [ensurePlayer])
+  }, [closeOpenNotes, ensurePlayer])
+
+  const toggleRecording = useCallback(() => {
+    if (isRecordingRef.current) {
+      closeOpenNotes()
+      setIsRecording(false)
+      return
+    }
+    // recording into a stopped loop records nothing, so arming starts it
+    const instance = ensurePlayer()
+    if (!instance.isPlaying) {
+      instance.start()
+      setIsPlaying(true)
+    }
+    setIsRecording(true)
+    setPianoOpen(true)
+  }, [closeOpenNotes, ensurePlayer])
 
   const handleExport = useCallback(() => {
     const binding = applyPatternToSong(
@@ -625,8 +932,22 @@ export const PatternEditor: FC<PatternEditorProps> = ({
         >
           {isPlaying ? <Pause size="1rem" /> : <Play size="1rem" />}
         </ToolbarButton>
+        <RecordButton
+          data-testid="pattern-record"
+          onMouseDown={toggleRecording}
+          selected={isRecording}
+          aria-label={localized["pattern-record"]}
+        >
+          <Record size="1rem" />
+        </RecordButton>
         <ToolbarButton onMouseDown={() => setLoop((l) => !l)} selected={loop}>
           <Localized name="pattern-loop" />
+        </ToolbarButton>
+        <ToolbarButton
+          onMouseDown={() => setPianoOpen((open) => !open)}
+          selected={pianoOpen}
+        >
+          <Localized name="pattern-piano" />
         </ToolbarButton>
 
         <Secondary data-open={moreOpen}>
@@ -989,6 +1310,78 @@ export const PatternEditor: FC<PatternEditorProps> = ({
                 handleDeleteNote(selected.layerId, selected.noteId)
               }}
             />
+          )}
+
+          {pianoOpen && (
+            <>
+              <PianoBar>
+                <ToolbarButtonGroup>
+                  <ToolbarButtonGroupItem
+                    onMouseDown={() => setPianoSource("screen")}
+                    selected={pianoSource === "screen"}
+                  >
+                    <Localized name="pattern-piano" />
+                  </ToolbarButtonGroupItem>
+                  <ToolbarButtonGroupItem
+                    onMouseDown={() => setPianoSource("paper")}
+                    selected={pianoSource === "paper"}
+                  >
+                    <Localized name="jam-scan-keys" />
+                  </ToolbarButtonGroupItem>
+                </ToolbarButtonGroup>
+
+                {pianoSource === "screen" && (
+                  <>
+                    <ToolbarButtonGroup>
+                      <ToolbarButtonGroupItem
+                        onMouseDown={() =>
+                          setPianoBase((p) => Math.max(0, p - 12))
+                        }
+                        aria-label={localized["one-octave-down"]}
+                      >
+                        −
+                      </ToolbarButtonGroupItem>
+                      <ToolbarButtonGroupItem
+                        onMouseDown={() =>
+                          setPianoBase((p) => Math.min(108, p + 12))
+                        }
+                        aria-label={localized["one-octave-up"]}
+                      >
+                        +
+                      </ToolbarButtonGroupItem>
+                    </ToolbarButtonGroup>
+                    <span>
+                      {noteNameWithOctString(pianoBase)} –{" "}
+                      {noteNameWithOctString(
+                        Math.min(127, pianoBase + (isNarrow ? 2 : 7) * 12 - 1),
+                      )}
+                    </span>
+                  </>
+                )}
+
+                <ToolbarButton
+                  onMouseDown={() => setQuantizeRecording((q) => !q)}
+                  selected={quantizeRecording}
+                >
+                  <Localized name="pattern-quantize-recording" />
+                </ToolbarButton>
+                <Spacer />
+                <span>{activeLayer?.name}</span>
+              </PianoBar>
+              {pianoSource === "screen" ? (
+                <PianoKeyboard
+                  baseNote={pianoBase}
+                  octaves={isNarrow ? 2 : 7}
+                  compact={isNarrow}
+                  activeNotes={activeNotes}
+                  codeLabels={isNarrow ? null : codeLabels}
+                  onNoteOn={startNote}
+                  onNoteOff={stopNote}
+                />
+              ) : (
+                <PaperKeys onNoteOn={startNote} onNoteOff={stopNote} />
+              )}
+            </>
           )}
         </CanvasArea>
       </Body>

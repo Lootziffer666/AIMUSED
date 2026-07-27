@@ -569,6 +569,14 @@ export default {
     "pattern-more": "More",
     "pattern-instrument-new-layer": "A new instrument opens a new layer",
     "pattern-layer-visibility": "Show or hide layer",
+    "pattern-piano": "Piano",
+    "pattern-record": "Record",
+    "pattern-quantize-recording": "Snap recording",
+    "jam-scan-keys": "Paper keys",
+    "jam-keys-found": "Keyboard found",
+    "jam-keys-nothing-found":
+      "No row of keys found. Draw the keys as closed boxes side by side.",
+    "jam-keys-unanchored": "Octave not certain – the black keys are missing",
   },
   fr: {
     "open-orchestration": "Orchestration…",
@@ -1146,6 +1154,14 @@ export default {
     "pattern-instrument-new-layer":
       "Un nouvel instrument ouvre une nouvelle couche",
     "pattern-layer-visibility": "Afficher ou masquer la couche",
+    "pattern-piano": "Piano",
+    "pattern-record": "Enregistrer",
+    "pattern-quantize-recording": "Caler l'enregistrement",
+    "jam-scan-keys": "Touches papier",
+    "jam-keys-found": "Clavier trouvé",
+    "jam-keys-nothing-found":
+      "Aucune rangée de touches. Dessine les touches comme des cases fermées côte à côte.",
+    "jam-keys-unanchored": "Octave incertaine – les touches noires manquent",
   },
   ja: {
     "open-orchestration": "Orchestration…",
@@ -1715,6 +1731,14 @@ export default {
     "pattern-more": "その他",
     "pattern-instrument-new-layer": "楽器を変えると新しいレイヤーができます",
     "pattern-layer-visibility": "レイヤーの表示 / 非表示",
+    "pattern-piano": "ピアノ",
+    "pattern-record": "録音",
+    "pattern-quantize-recording": "録音をクオンタイズ",
+    "jam-scan-keys": "紙の鍵盤",
+    "jam-keys-found": "鍵盤を検出",
+    "jam-keys-nothing-found":
+      "鍵盤の列が見つかりません。閉じた四角を横に並べて描いてください。",
+    "jam-keys-unanchored": "オクターブは不確実です – 黒鍵がありません",
   },
   "zh-Hans": {
     "open-orchestration": "Orchestration…",
@@ -2271,6 +2295,14 @@ export default {
     "pattern-more": "更多",
     "pattern-instrument-new-layer": "换乐器会新建一个图层",
     "pattern-layer-visibility": "显示或隐藏图层",
+    "pattern-piano": "钢琴",
+    "pattern-record": "录音",
+    "pattern-quantize-recording": "录音对齐网格",
+    "jam-scan-keys": "纸上琴键",
+    "jam-keys-found": "找到键盘",
+    "jam-keys-nothing-found":
+      "没有找到成排的琴键。请把琴键画成并排的封闭方框。",
+    "jam-keys-unanchored": "八度不确定 – 缺少黑键",
   },
   "zh-Hant": {
     "open-orchestration": "Orchestration…",
@@ -2828,6 +2860,14 @@ export default {
     "pattern-more": "更多",
     "pattern-instrument-new-layer": "換樂器會新增一個圖層",
     "pattern-layer-visibility": "顯示或隱藏圖層",
+    "pattern-piano": "鋼琴",
+    "pattern-record": "錄音",
+    "pattern-quantize-recording": "錄音對齊格線",
+    "jam-scan-keys": "紙上琴鍵",
+    "jam-keys-found": "找到鍵盤",
+    "jam-keys-nothing-found":
+      "沒有找到成排的琴鍵。請把琴鍵畫成並排的封閉方框。",
+    "jam-keys-unanchored": "八度不確定 – 缺少黑鍵",
   },
   sk: {
     "open-orchestration": "Orchestration…",
@@ -3395,5 +3435,13 @@ export default {
     "pattern-more": "Viac",
     "pattern-instrument-new-layer": "Nový nástroj otvorí novú vrstvu",
     "pattern-layer-visibility": "Zobraziť alebo skryť vrstvu",
+    "pattern-piano": "Klavír",
+    "pattern-record": "Nahrávať",
+    "pattern-quantize-recording": "Zarovnať nahrávku",
+    "jam-scan-keys": "Papierové klávesy",
+    "jam-keys-found": "Klaviatúra nájdená",
+    "jam-keys-nothing-found":
+      "Nenašiel sa rad klávesov. Nakresli klávesy ako zatvorené obdĺžniky vedľa seba.",
+    "jam-keys-unanchored": "Oktáva nie je istá – chýbajú čierne klávesy",
   },
 } as const

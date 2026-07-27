@@ -169,6 +169,61 @@ Marke je Ebene mit Auge und Farbe.
 Trommeln bleiben eine Zeile pro Sound – sie haben keine Tonhöhe, überlagern
 sich also nicht.
 
+## Klavier und Aufnahme
+
+Unter dem Raster liegt ein Klavier. Am großen Schirm ist es vollständig: sieben
+Oktaven, alle Tasten gleichzeitig erreichbar, mit dem Buchstaben der
+Computertaste auf jeder Taste. Am Handy sind es zwei Oktaven mit
+fingergroßen Tasten und den Knöpfen **−** und **+**, um den Ausschnitt zu
+verschieben – der Umfang wird kleiner, das Instrument nicht.
+
+Gespielt wird auf vier Wegen, alle gleichwertig:
+
+- **Maus oder Finger** auf den Tasten. Über die Tasten ziehen spielt sie der
+  Reihe nach; wie weit unten die Taste getroffen wird, entscheidet die Lautstärke.
+- **Computertastatur.** Die untere Buchstabenreihe ist eine Oktave weiße Tasten,
+  die Reihe darüber die schwarzen, ab `Q` dasselbe eine Oktave höher. Die
+  Zuordnung hängt an der *physischen* Taste, ist auf QWERTZ also dieselbe
+  Handhaltung wie auf QWERTY.
+- **MIDI-Keyboard.** Wird angeschlossen und spielt sofort – mit dem Instrument
+  der Ebene, in die aufgenommen wird.
+- **Ausgedrucktes Tastenfeld**, siehe unten.
+
+Der rote Punkt in der Kopfleiste ist die Aufnahme. Er startet die Schleife, und
+alles Gespielte landet in der aktiven Ebene, wahlweise aufs Raster gefangen
+(**Snap recording**). Ein Ton, der über das Schleifenende hinaus gehalten wird,
+bleibt ein gehaltener Ton; eine Taste, die beim Stoppen noch unten ist, wird
+trotzdem zu einem Ton.
+
+**Der wichtigste Teil:** das Raster bleibt die ganze Zeit sichtbar. Verspielt man
+sich, tippt man den falschen Ton weg und den richtigen hin – die Aufnahme muss
+nicht wiederholt werden. Jeder aufgenommene Ton ist außerdem ein eigener
+Undo-Schritt.
+
+## Tastenfeld auf Papier
+
+Neben **Piano** steht **Paper keys**: dieselbe Idee wie beim Schlagzeug, nur für
+eine Klaviatur. Ein gemaltes oder ausgedrucktes Tastenfeld wird einmal
+eingelesen, danach werden die Hände verfolgt und ein Fingertipp auf eine Taste
+spielt sie.
+
+Erkannt wird die **Reihe**: viele geschlossene Kästen nebeneinander, alle etwa
+gleich hoch. Ein einzelner Kringel daneben gehört nicht dazu und fällt raus.
+
+Welche Taste C ist, verraten die schwarzen Tasten – aber nicht dadurch, dass
+nach schwarzen Flächen gesucht wird (die verschmelzen beim Ausdruck mit den
+Linien). Stattdessen verrät es die Form der weißen Tasten selbst: eine Taste,
+der oben rechts eine schwarze Taste fehlt, hat rechts weniger Fläche, ihr
+Schwerpunkt liegt links. Aus links/mittig/rechts über die Reihe fällt
+`C D E` und `F G A B` heraus.
+
+Steht auf dem Papier **keine** schwarze Taste, ist nichts verankert. Dann wird
+die linke Taste zu C erklärt – und MUSE sagt das ausdrücklich
+(„Oktave nicht sicher"), statt eine geratene Tonart als Tatsache auszugeben.
+
+Was hilft: dunkler Stift auf hellem Papier, Tasten **ganz zumalen** (eine offene
+Linie umschließt nichts), **Rückkamera**, und mindestens fünf Tasten.
+
 ## Bekannte Grenzen
 
 - **iOS**: Audio startet erst nach einer Berührung – das erste Antippen von
