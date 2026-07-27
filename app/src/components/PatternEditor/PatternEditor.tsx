@@ -41,11 +41,14 @@ import {
 import {
   addLayer,
   addNote,
+  ensureLayerVisible,
   hasOverhang,
+  type InstrumentSelection,
   removeLayer,
   removeNote,
   resizeNote,
   resizeNoteStart,
+  selectOrCreateInstrumentLayer,
   setGridDivision,
   setNoteEnvelope,
   setNotePosition,
@@ -77,6 +80,7 @@ import { EventDrawer } from "./EventDrawer"
 import { DRUM_ZONES, LayerRail, MELODIC_INSTRUMENTS } from "./LayerRail"
 import { type CanvasGesture, PatternCanvas } from "./PatternCanvas"
 import { SongMakerGrid } from "./SongMakerGrid"
+import { SongMakerLayerBar } from "./SongMakerLayerBar"
 
 const Body = styled.div`
   display: flex;
@@ -189,6 +193,14 @@ export const PatternEditor: FC<PatternEditorProps> = ({
   const [activeLayerId, setActiveLayerId] = useState<string>(
     () => stored?.trackLayers[0]?.id ?? "",
   )
+  /**
+   * In the grid all melodic layers share one raster, so a tap needs a target
+   * even while a drum layer is the active one: the melodic layer you last
+   * worked on.
+   */
+  const [preferredMelodicId, setPreferredMelodicId] = useState<string>(
+    () => stored?.trackLayers.find((l) => l.kind === "melodic")?.id ?? "",
+  )
   const [selected, setSelected] = useState<{
     layerId: string
     noteId: string
@@ -238,6 +250,24 @@ export const PatternEditor: FC<PatternEditorProps> = ({
         .find((l) => l.id === selected.layerId)
         ?.notes.find((n) => n.id === selected.noteId)
     : undefined
+
+  const selectLayer = useCallback((layerId: string) => {
+    setActiveLayerId(layerId)
+    setSelected(null)
+    const layer = patternRef.current.trackLayers.find((l) => l.id === layerId)
+    if (layer?.kind === "melodic") setPreferredMelodicId(layerId)
+  }, [])
+
+  const melodicLayerId = useMemo(() => {
+    const preferred = pattern.trackLayers.find(
+      (l) => l.id === preferredMelodicId && l.kind === "melodic",
+    )
+    return (
+      preferred?.id ??
+      pattern.trackLayers.find((l) => l.kind === "melodic")?.id ??
+      ""
+    )
+  }, [pattern.trackLayers, preferredMelodicId])
 
   // ---- audio ----
   const playerDeps = useMemo(
@@ -436,6 +466,33 @@ export const PatternEditor: FC<PatternEditorProps> = ({
       gestureApplyRef.current = null
       commit(removeNote(patternRef.current, layerId, noteId))
       setSelected((s) => (s?.noteId === noteId ? null : s))
+    },
+    [commit],
+  )
+
+  // ---- layers ----
+  /**
+   * Reaching for another instrument opens a layer; it never rewrites the one
+   * you are standing on. Coming back to an instrument you already have returns
+   * to its layer, so switching back and forth leaves no empty layers behind.
+   */
+  const handlePickInstrument = useCallback(
+    (selection: InstrumentSelection) => {
+      const result = selectOrCreateInstrumentLayer(
+        patternRef.current,
+        selection,
+      )
+      if (result.pattern !== patternRef.current) commit(result.pattern)
+      setActiveLayerId(result.layerId)
+      setSelected(null)
+      if (selection.kind === "melodic") setPreferredMelodicId(result.layerId)
+    },
+    [commit],
+  )
+
+  const handleToggleVisible = useCallback(
+    (layerId: string) => {
+      commit(toggleLayerFlag(patternRef.current, layerId, "visible"))
     },
     [commit],
   )
@@ -734,10 +791,7 @@ export const PatternEditor: FC<PatternEditorProps> = ({
           open={railOpen}
           activeLayerId={activeLayerId}
           onToggleOpen={openRail}
-          onSelect={(layerId) => {
-            setActiveLayerId(layerId)
-            setSelected(null)
-          }}
+          onSelect={selectLayer}
           onToggleFlag={(layerId, flag) =>
             commit(toggleLayerFlag(pattern, layerId, flag))
           }
@@ -771,8 +825,10 @@ export const PatternEditor: FC<PatternEditorProps> = ({
               program: kind === "melodic" ? 0 : undefined,
               drumZoneId: kind === "melodic" ? undefined : "kick",
             })
+            const added = next.trackLayers[next.trackLayers.length - 1]
             commit(next)
-            setActiveLayerId(next.trackLayers[next.trackLayers.length - 1].id)
+            setActiveLayerId(added.id)
+            if (added.kind === "melodic") setPreferredMelodicId(added.id)
             setRailOpen(true)
           }}
           onRemoveLayer={(layerId) => {
@@ -791,49 +847,67 @@ export const PatternEditor: FC<PatternEditorProps> = ({
 
         <CanvasArea>
           {view === "grid" ? (
-            <SongMakerGrid
-              pattern={pattern}
-              activeLayerId={activeLayerId}
-              selectedNoteId={selected?.noteId ?? null}
-              basePitch={basePitch}
-              rowCount={14}
-              cellWidth={Math.max(28, Math.round(stepWidth * 0.9))}
-              playheadTick={playheadTick}
-              keyRoot={gridKey}
-              mode={gridMode}
-              onToggle={(layerId, startTick, noteNumber) => {
-                const layer = pattern.trackLayers.find((l) => l.id === layerId)
-                const existing = layer?.notes.find(
-                  (note) =>
-                    note.startTick === startTick &&
-                    note.noteNumber === noteNumber,
-                )
-                if (existing) {
-                  handleDeleteNote(layerId, existing.id)
-                  return
+            <>
+              <SongMakerLayerBar
+                pattern={pattern}
+                activeLayerId={activeLayerId}
+                onSelectLayer={selectLayer}
+                onToggleVisible={handleToggleVisible}
+                onPickInstrument={handlePickInstrument}
+              />
+              <SongMakerGrid
+                pattern={pattern}
+                activeLayerId={activeLayerId}
+                melodicLayerId={melodicLayerId}
+                selectedNoteId={selected?.noteId ?? null}
+                basePitch={basePitch}
+                rowCount={14}
+                cellWidth={Math.max(28, Math.round(stepWidth * 0.9))}
+                playheadTick={playheadTick}
+                keyRoot={gridKey}
+                mode={gridMode}
+                onToggle={(layerId, startTick, noteNumber) => {
+                  const layer = pattern.trackLayers.find(
+                    (l) => l.id === layerId,
+                  )
+                  const existing = layer?.notes.find(
+                    (note) =>
+                      note.startTick === startTick &&
+                      note.noteNumber === noteNumber,
+                  )
+                  if (existing) {
+                    handleDeleteNote(layerId, existing.id)
+                    return
+                  }
+                  gestureApplyRef.current = null
+                  // a note has to be visible where it was placed, so writing to
+                  // a hidden layer brings that layer back
+                  const result = addNote(
+                    ensureLayerVisible(pattern, layerId),
+                    layerId,
+                    {
+                      startTick,
+                      noteNumber,
+                      durationTicks: step,
+                    },
+                  )
+                  if (!result.noteId) {
+                    toast.info(localized["pattern-layer-locked"])
+                    return
+                  }
+                  commit(result.pattern)
+                  previewNote(layerId, noteNumber)
+                }}
+                onExtendNote={(layerId, noteId, durationTicks) =>
+                  commit(resizeNote(pattern, layerId, noteId, durationTicks))
                 }
-                gestureApplyRef.current = null
-                const result = addNote(pattern, layerId, {
-                  startTick,
-                  noteNumber,
-                  durationTicks: step,
-                })
-                if (!result.noteId) {
-                  toast.info(localized["pattern-layer-locked"])
-                  return
-                }
-                commit(result.pattern)
-                previewNote(layerId, noteNumber)
-              }}
-              onExtendNote={(layerId, noteId, durationTicks) =>
-                commit(resizeNote(pattern, layerId, noteId, durationTicks))
-              }
-              onSelectNote={(layerId, noteId) => {
-                setSelected({ layerId, noteId })
-                setDrawerOpen(true)
-              }}
-              onSelectLayer={(layerId) => setActiveLayerId(layerId)}
-            />
+                onSelectNote={(layerId, noteId) => {
+                  setSelected({ layerId, noteId })
+                  setDrawerOpen(true)
+                }}
+                onSelectLayer={selectLayer}
+              />
+            </>
           ) : (
             <PatternCanvas
               pattern={pattern}
@@ -860,7 +934,7 @@ export const PatternEditor: FC<PatternEditorProps> = ({
                   ),
                 )
               }
-              onSelectLayer={(layerId) => setActiveLayerId(layerId)}
+              onSelectLayer={selectLayer}
             />
           )}
 

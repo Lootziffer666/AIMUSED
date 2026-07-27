@@ -567,6 +567,8 @@ export default {
     "pattern-view-canvas": "Canvas",
     "pattern-grid": "Song maker grid",
     "pattern-more": "More",
+    "pattern-instrument-new-layer": "A new instrument opens a new layer",
+    "pattern-layer-visibility": "Show or hide layer",
   },
   fr: {
     "open-orchestration": "Orchestration…",
@@ -1141,6 +1143,9 @@ export default {
     "pattern-view-canvas": "Toile",
     "pattern-grid": "Grille Song Maker",
     "pattern-more": "Plus",
+    "pattern-instrument-new-layer":
+      "Un nouvel instrument ouvre une nouvelle couche",
+    "pattern-layer-visibility": "Afficher ou masquer la couche",
   },
   ja: {
     "open-orchestration": "Orchestration…",
@@ -1708,6 +1713,8 @@ export default {
     "pattern-view-canvas": "キャンバス",
     "pattern-grid": "ソングメーカーのグリッド",
     "pattern-more": "その他",
+    "pattern-instrument-new-layer": "楽器を変えると新しいレイヤーができます",
+    "pattern-layer-visibility": "レイヤーの表示 / 非表示",
   },
   "zh-Hans": {
     "open-orchestration": "Orchestration…",
@@ -2262,6 +2269,8 @@ export default {
     "pattern-view-canvas": "画布",
     "pattern-grid": "Song Maker 网格",
     "pattern-more": "更多",
+    "pattern-instrument-new-layer": "换乐器会新建一个图层",
+    "pattern-layer-visibility": "显示或隐藏图层",
   },
   "zh-Hant": {
     "open-orchestration": "Orchestration…",
@@ -2817,6 +2826,8 @@ export default {
     "pattern-view-canvas": "畫布",
     "pattern-grid": "Song Maker 網格",
     "pattern-more": "更多",
+    "pattern-instrument-new-layer": "換樂器會新增一個圖層",
+    "pattern-layer-visibility": "顯示或隱藏圖層",
   },
   sk: {
     "open-orchestration": "Orchestration…",
@@ -3382,5 +3393,7 @@ export default {
     "pattern-view-canvas": "Plátno",
     "pattern-grid": "Mriežka Song Maker",
     "pattern-more": "Viac",
+    "pattern-instrument-new-layer": "Nový nástroj otvorí novú vrstvu",
+    "pattern-layer-visibility": "Zobraziť alebo skryť vrstvu",
   },
 } as const

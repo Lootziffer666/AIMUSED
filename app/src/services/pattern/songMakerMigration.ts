@@ -47,7 +47,7 @@ export function songMakerPatternToMusePattern(
     .filter((entry) => entry.used)
 
   const melodyLayer = createLayer(
-    { name: "Melodie", kind: "melodic", program: 0 },
+    { name: "Melody", kind: "melodic", program: 0 },
     0,
   )
   const drumLayers = usedDrumRows.map((entry, index) => {

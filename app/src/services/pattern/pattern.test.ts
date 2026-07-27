@@ -37,6 +37,8 @@ import {
   setGridDivision,
   setNoteEnvelope,
   setNotePitch,
+  ensureLayerVisible,
+  selectOrCreateInstrumentLayer,
   setPatternLength,
   setPatternSteps,
   toggleLayerFlag,
@@ -217,6 +219,79 @@ describe("Layers", () => {
     )
     const [event] = collectPatternEvents(p, 0, 1)
     expect(noteNumberFor(event.layer, event.note)).toBe(48)
+  })
+})
+
+describe("Instrument layers", () => {
+  it("opens a new layer instead of rewriting the one being played", () => {
+    const { pattern, piano } = patternWithLayers()
+    const played = addNote(pattern, piano, {
+      startTick: 0,
+      noteNumber: 60,
+    }).pattern
+
+    const result = selectOrCreateInstrumentLayer(played, {
+      kind: "melodic",
+      program: 24,
+      name: "Guitar",
+    })
+
+    expect(result.created).toBe(true)
+    expect(result.pattern.trackLayers).toHaveLength(3)
+    expect(result.pattern.trackLayers[2].name).toBe("Guitar")
+    expect(result.pattern.trackLayers[2].program).toBe(24)
+    // the notes already played keep their instrument
+    const before = result.pattern.trackLayers.find((l) => l.id === piano)
+    expect(before?.program).toBe(0)
+    expect(before?.notes).toHaveLength(1)
+  })
+
+  it("returns to the existing layer of an instrument already in the stack", () => {
+    const { pattern, violin } = patternWithLayers()
+    const result = selectOrCreateInstrumentLayer(pattern, {
+      kind: "melodic",
+      program: 40,
+      name: "Violin",
+    })
+
+    expect(result.created).toBe(false)
+    expect(result.layerId).toBe(violin)
+    expect(result.pattern.trackLayers).toHaveLength(2)
+  })
+
+  it("keeps drums and instruments apart even at the same number", () => {
+    const pattern = addLayer(createPattern({ timebase: TIMEBASE }), {
+      name: "Kick",
+      kind: "percussion",
+      drumZoneId: "kick",
+    })
+    const result = selectOrCreateInstrumentLayer(pattern, {
+      kind: "percussion",
+      drumZoneId: "snare",
+      name: "Snare",
+    })
+
+    expect(result.created).toBe(true)
+    expect(result.pattern.trackLayers[2].kind).toBe("percussion")
+    expect(result.pattern.trackLayers[2].drumZoneId).toBe("snare")
+  })
+
+  it("shows a hidden layer again when it is picked", () => {
+    const { pattern, violin } = patternWithLayers()
+    const hidden = toggleLayerFlag(pattern, violin, "visible")
+    expect(hidden.trackLayers[1].visible).toBe(false)
+
+    const result = selectOrCreateInstrumentLayer(hidden, {
+      kind: "melodic",
+      program: 40,
+    })
+    expect(result.pattern.trackLayers[1].visible).toBe(true)
+  })
+
+  it("leaves a visible layer untouched", () => {
+    const { pattern, piano } = patternWithLayers()
+    expect(ensureLayerVisible(pattern, piano)).toBe(pattern)
+    expect(ensureLayerVisible(pattern, "nope")).toBe(pattern)
   })
 })
 
