@@ -49,6 +49,13 @@ weder Layer-Stack noch Notenraster noch Kurven.
 - **Zwei Bézierkurven pro Ereignis** – Lautstärke und Ausdruck – mit Presets
   (direkt, weich ein, weich aus, anschwellen, abschwellen, Akzent), frei
   ziehbaren Punkten und einem Bogen-Regler.
+- **Klavier unter dem Raster.** Ein vollständiges Klavier (sieben Oktaven, ohne
+  Scrollen) am großen Schirm, zwei Oktaven mit fingergroßen Tasten am Handy.
+  Gespielt wird es mit Maus, Finger, Computertastatur oder einem
+  MIDI-Keyboard – vier Wege in dieselben zwei Rückrufe.
+- **Direkte Aufnahme in die aktive Ebene**, während die Schleife läuft, wahlweise
+  aufs Raster gefangen. Das Raster bleibt dabei sichtbar: ein misslungener Ton
+  wird angetippt und korrigiert, statt die Aufnahme zu wiederholen.
 - **Undo/Redo** über alle Bearbeitungsschritte (`Cmd/Ctrl+Z`, `Shift+Cmd+Z`).
 - **Wiedergabe** mehrerer Ebenen gleichzeitig, mit Loop auf den Endmarker,
   `Leertaste` startet und stoppt.

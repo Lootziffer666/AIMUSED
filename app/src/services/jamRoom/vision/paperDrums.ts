@@ -15,6 +15,8 @@
  * without a camera.
  */
 
+import { floodRegions, type Region } from "./regions"
+
 export interface GrayImage {
   data: Uint8ClampedArray | Uint8Array
   width: number
@@ -119,16 +121,6 @@ export function inkMask(
   return mask
 }
 
-interface Region {
-  area: number
-  minX: number
-  maxX: number
-  minY: number
-  maxY: number
-  sumX: number
-  sumY: number
-}
-
 /**
  * Background regions that the border cannot reach – the holes the ink encloses.
  */
@@ -137,83 +129,10 @@ export function enclosedRegions(
   width: number,
   height: number,
 ): Region[] {
-  const OUTSIDE = 2
-  const seen = new Uint8Array(width * height)
-  const queue = new Int32Array(width * height)
-
-  // 1. flood the background in from every border pixel
-  let head = 0
-  let tail = 0
-  const pushIfBackground = (index: number) => {
-    if (mask[index] === 0 && seen[index] === 0) {
-      seen[index] = OUTSIDE
-      queue[tail++] = index
-    }
-  }
-  for (let x = 0; x < width; x++) {
-    pushIfBackground(x)
-    pushIfBackground((height - 1) * width + x)
-  }
-  for (let y = 0; y < height; y++) {
-    pushIfBackground(y * width)
-    pushIfBackground(y * width + width - 1)
-  }
-  while (head < tail) {
-    const index = queue[head++]
-    const x = index % width
-    const y = (index - x) / width
-    if (x > 0) pushIfBackground(index - 1)
-    if (x < width - 1) pushIfBackground(index + 1)
-    if (y > 0) pushIfBackground(index - width)
-    if (y < height - 1) pushIfBackground(index + width)
-  }
-
-  // 2. whatever background is left is enclosed; collect it region by region
-  const regions: Region[] = []
-  for (let start = 0; start < mask.length; start++) {
-    if (mask[start] !== 0 || seen[start] !== 0) continue
-    const region: Region = {
-      area: 0,
-      minX: width,
-      maxX: 0,
-      minY: height,
-      maxY: 0,
-      sumX: 0,
-      sumY: 0,
-    }
-    head = 0
-    tail = 0
-    seen[start] = 1
-    queue[tail++] = start
-    while (head < tail) {
-      const index = queue[head++]
-      const x = index % width
-      const y = (index - x) / width
-      region.area++
-      region.sumX += x
-      region.sumY += y
-      if (x < region.minX) region.minX = x
-      if (x > region.maxX) region.maxX = x
-      if (y < region.minY) region.minY = y
-      if (y > region.maxY) region.maxY = y
-
-      const neighbours = [
-        x > 0 ? index - 1 : -1,
-        x < width - 1 ? index + 1 : -1,
-        y > 0 ? index - width : -1,
-        y < height - 1 ? index + width : -1,
-      ]
-      for (const next of neighbours) {
-        if (next < 0) continue
-        if (mask[next] === 0 && seen[next] === 0) {
-          seen[next] = 1
-          queue[tail++] = next
-        }
-      }
-    }
-    regions.push(region)
-  }
-  return regions
+  return floodRegions(mask, width, height, {
+    value: 0,
+    excludeBorderConnected: true,
+  })
 }
 
 /**

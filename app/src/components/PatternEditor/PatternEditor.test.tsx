@@ -74,6 +74,8 @@ function makeStores(patternStore: PatternStore) {
     },
     synth: { isLoaded: false },
     synthGroup: { activate: vi.fn() },
+    midiMonitor: { enabled: true },
+    midiInput: { on: () => () => {} },
   } as unknown as RootStore
   return { stores, song, sent }
 }
@@ -295,6 +297,71 @@ describe("PatternEditor", () => {
     // hidden, not deleted
     expect(store.get(pattern.id)?.trackLayers[2].notes).toHaveLength(1)
     expect(store.get(pattern.id)?.trackLayers[2].visible).toBe(false)
+  })
+
+  it("plays the piano without writing anything while not recording", async () => {
+    const store = new PatternStore()
+    const pattern = seedPattern(store)
+    renderEditor(store, pattern.id)
+
+    const key = screen.getByLabelText("C3")
+    fireEvent.pointerDown(key, { pointerId: 1, clientY: 0 })
+    fireEvent.pointerUp(key, { pointerId: 1 })
+
+    expect(store.get(pattern.id)?.trackLayers[0].notes).toHaveLength(0)
+  })
+
+  it("records a played key into the active layer", async () => {
+    const user = userEvent.setup()
+    const store = new PatternStore()
+    const pattern = seedPattern(store)
+    renderEditor(store, pattern.id)
+
+    await user.click(screen.getByTestId("pattern-record"))
+    const key = screen.getByLabelText("E3")
+    fireEvent.pointerDown(key, { pointerId: 1, clientY: 0 })
+    fireEvent.pointerUp(key, { pointerId: 1 })
+
+    const notes = store.get(pattern.id)?.trackLayers[0].notes ?? []
+    expect(notes).toHaveLength(1)
+    expect(notes[0].noteNumber).toBe(52) // E3
+    // quantizing is on by default, so a tap is a full grid step
+    expect(notes[0].durationTicks).toBe(120)
+
+    // and the take is editable straight away instead of having to be replayed
+    await user.click(screen.getByTestId("pattern-record"))
+    expect(store.get(pattern.id)?.trackLayers[0].notes).toHaveLength(1)
+  })
+
+  it("records from the computer keyboard as well", async () => {
+    const user = userEvent.setup()
+    const store = new PatternStore()
+    const pattern = seedPattern(store)
+    renderEditor(store, pattern.id)
+
+    await user.click(screen.getByTestId("pattern-record"))
+    // the physical key under the left little finger is the base C
+    fireEvent.keyDown(window, { code: "KeyZ" })
+    fireEvent.keyUp(window, { code: "KeyZ" })
+
+    const notes = store.get(pattern.id)?.trackLayers[0].notes ?? []
+    expect(notes).toHaveLength(1)
+    expect(notes[0].noteNumber).toBe(48)
+  })
+
+  it("keeps a key that was still down when the transport stopped", async () => {
+    const user = userEvent.setup()
+    const store = new PatternStore()
+    const pattern = seedPattern(store)
+    renderEditor(store, pattern.id)
+
+    await user.click(screen.getByTestId("pattern-record"))
+    fireEvent.keyDown(window, { code: "KeyX" })
+    // no key up – the transport stops with the key held
+    await user.click(screen.getByTestId("pattern-transport"))
+
+    const notes = store.get(pattern.id)?.trackLayers[0].notes ?? []
+    expect(notes.map((n) => n.noteNumber)).toEqual([50])
   })
 
   it("exports to the song and does not duplicate tracks on repeated export", async () => {
