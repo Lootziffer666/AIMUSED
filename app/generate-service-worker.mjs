@@ -15,14 +15,6 @@ generateSW({
       urlPattern: /^.+\.sf2$/,
       handler: "StaleWhileRevalidate",
     },
-    {
-      urlPattern: /^https:\/\/fonts\.googleapis\.com/,
-      handler: "StaleWhileRevalidate",
-    },
-    {
-      urlPattern: /^https:\/\/fonts\.gstatic\.com/,
-      handler: "StaleWhileRevalidate",
-    },
   ],
 }).then(({ count, size, warnings }) => {
   if (warnings.length > 0) {

@@ -1,0 +1,245 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://muse.local/schemas/tonemap/tonemap-v1.schema.json",
+  "title": "MUSE ToneMap project",
+  "type": "object",
+  "required": ["schemaVersion", "id", "name", "createdAt", "updatedAt", "ticksPerQuarterNote", "nodes", "observations"],
+  "additionalProperties": true,
+  "properties": {
+    "schemaVersion": { "const": "muse.tonemap.v1" },
+    "id": { "type": "string", "minLength": 1 },
+    "name": { "type": "string" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "sourcePairId": { "type": "string" },
+    "ticksPerQuarterNote": { "type": "integer", "exclusiveMinimum": 0 },
+    "nodes": { "type": "array", "items": { "$ref": "#/$defs/node" } },
+    "observations": { "type": "array", "items": { "$ref": "#/$defs/observation" } },
+    "directions": { "type": "array", "items": { "$ref": "#/$defs/direction" } },
+    "notes": { "type": "array", "items": { "type": "string" } },
+    "unknownFields": {
+      "type": "object",
+      "description": "Fields written by a newer or foreign producer, preserved verbatim."
+    }
+  },
+  "$defs": {
+    "provenance": {
+      "type": "object",
+      "required": ["source", "status", "confidence", "extractionMethod", "evidence", "createdAt"],
+      "properties": {
+        "source": { "type": "string" },
+        "status": { "enum": ["manually-confirmed", "derived", "assumed", "unresolved"] },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "extractionMethod": { "type": "string" },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["kind", "ref"],
+      "properties": {
+        "kind": {
+          "enum": ["midi-event", "midi-metadata", "symbolic-feature", "audio-feature", "alignment", "user-input", "heuristic", "model"]
+        },
+        "ref": { "type": "string" },
+        "detail": { "type": "string" },
+        "weight": { "type": "number" }
+      }
+    },
+    "timeRange": {
+      "type": "object",
+      "required": ["startTick", "endTick"],
+      "properties": {
+        "startTick": { "type": "number" },
+        "endTick": { "type": "number" },
+        "startSeconds": { "type": "number" },
+        "endSeconds": { "type": "number" }
+      }
+    },
+    "envelope": {
+      "type": "object",
+      "required": ["points"],
+      "properties": {
+        "points": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["tick", "value"],
+            "properties": {
+              "tick": { "type": "number" },
+              "value": { "type": "number" },
+              "curve": { "enum": ["linear", "hold", "ease"] }
+            }
+          }
+        }
+      }
+    },
+    "node": {
+      "type": "object",
+      "required": ["id", "kind", "childIds", "provenance"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": {
+          "enum": ["song", "section", "track", "voice", "phrase", "motif", "motif-occurrence", "note-event"]
+        },
+        "label": { "type": "string" },
+        "parentId": { "type": "string" },
+        "childIds": { "type": "array", "items": { "type": "string" } },
+        "range": { "$ref": "#/$defs/timeRange" },
+        "variantOfId": { "type": "string" },
+        "variantTransform": {
+          "type": "object",
+          "properties": {
+            "transposeSemitones": { "type": "number" },
+            "timeScale": { "type": "number" }
+          }
+        },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "timbreVector": {
+      "type": "object",
+      "description": "Only canonical axes are stored; darkness, hardness, smoothness, stability and distance are derived as 1 - x.",
+      "propertyNames": {
+        "enum": ["brightness", "warmth", "softness", "roughness", "metallic", "airy", "woody", "breathy", "density", "attackSharpness", "sustain", "decay", "movement", "intimacy", "stereoWidth", "reverberance", "presence", "weight", "tension"]
+      },
+      "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 }
+    },
+    "register": {
+      "type": "object",
+      "required": ["lowestMidi", "highestMidi", "centroidMidi", "medianMidi"],
+      "properties": {
+        "lowestMidi": { "type": "number", "minimum": 0, "maximum": 127 },
+        "highestMidi": { "type": "number", "minimum": 0, "maximum": 127 },
+        "centroidMidi": { "type": "number" },
+        "medianMidi": { "type": "number" }
+      }
+    },
+    "patchCandidate": {
+      "type": "object",
+      "required": ["patchId", "libraryId", "score", "reasons"],
+      "properties": {
+        "patchId": { "type": "string" },
+        "libraryId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "family": { "type": "string" },
+        "instrument": { "type": "string" },
+        "articulation": { "type": "string" },
+        "score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "reasons": { "type": "array", "items": { "type": "string" } },
+        "keyswitch": { "type": "number" },
+        "sfzPath": { "type": "string" },
+        "soundFontPreset": {
+          "type": "object",
+          "properties": { "bank": { "type": "number" }, "program": { "type": "number" } }
+        },
+        "fallbackPatchIds": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "emotionalIntent": {
+      "type": "object",
+      "required": ["axes", "tags"],
+      "properties": {
+        "axes": {
+          "type": "object",
+          "propertyNames": {
+            "enum": ["valence", "arousal", "dominance", "tension", "vulnerability", "dignity", "menace", "wonder", "comedy", "heroism", "intimacy", "urgency", "melancholy", "absurdity"]
+          },
+          "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 }
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Free language, stored verbatim and never required to be interpretable."
+        },
+        "note": { "type": "string" }
+      }
+    },
+    "observation": {
+      "type": "object",
+      "required": ["id", "sourceRef", "timeRange", "musicalFunction", "prominence", "register", "timbreIntent", "implementationHints", "confidence", "evidence"],
+      "properties": {
+        "id": { "type": "string" },
+        "sourceRef": { "type": "string" },
+        "timeRange": { "$ref": "#/$defs/timeRange" },
+        "musicalFunction": {
+          "type": "object",
+          "required": ["value", "provenance"],
+          "properties": {
+            "value": {
+              "enum": ["primary-melody", "counter-melody", "bass", "harmony", "pulse", "ostinato", "texture", "accent", "transition", "drone", "percussion", "effect", "unknown"]
+            },
+            "provenance": { "$ref": "#/$defs/provenance" }
+          }
+        },
+        "prominence": {
+          "type": "object",
+          "required": ["value", "provenance"],
+          "properties": {
+            "value": {
+              "type": "object",
+              "required": ["state", "level"],
+              "properties": {
+                "state": { "enum": ["foreground", "midground", "background", "hidden", "emerging", "receding"] },
+                "level": { "type": "number", "minimum": 0, "maximum": 1 },
+                "envelope": { "$ref": "#/$defs/envelope" }
+              }
+            },
+            "provenance": { "$ref": "#/$defs/provenance" }
+          }
+        },
+        "register": { "$ref": "#/$defs/register" },
+        "symbolicFeatures": { "type": "object" },
+        "acousticFeatures": { "type": "object" },
+        "timbreIntent": { "$ref": "#/$defs/timbreVector" },
+        "articulation": { "type": "object" },
+        "dynamics": { "type": "object" },
+        "mix": { "type": "object" },
+        "emotionalIntent": { "$ref": "#/$defs/emotionalIntent" },
+        "implementation": { "type": "object" },
+        "implementationHints": { "type": "array", "items": { "$ref": "#/$defs/patchCandidate" } },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } }
+      }
+    },
+    "direction": {
+      "type": "object",
+      "required": ["id", "motifId", "trigger", "preserve", "provenance"],
+      "properties": {
+        "id": { "type": "string" },
+        "motifId": { "type": "string" },
+        "trigger": {
+          "oneOf": [
+            { "type": "object", "required": ["type", "startBeat"], "properties": { "type": { "const": "time" }, "startBeat": { "type": "number" } } },
+            { "type": "object", "required": ["type", "startTick"], "properties": { "type": { "const": "tick" }, "startTick": { "type": "number" } } },
+            { "type": "object", "required": ["type", "sectionId"], "properties": { "type": { "const": "section" }, "sectionId": { "type": "string" } } },
+            { "type": "object", "required": ["type", "state"], "properties": { "type": { "const": "game-state" }, "state": { "type": "string" } } },
+            { "type": "object", "required": ["type", "event"], "properties": { "type": { "const": "dramatic-event" }, "event": { "type": "string" } } }
+          ]
+        },
+        "preserve": {
+          "type": "object",
+          "required": ["identity"],
+          "properties": {
+            "identity": { "type": "boolean" },
+            "rhythm": { "type": "boolean" },
+            "harmony": { "type": "boolean" },
+            "contour": { "type": "boolean" },
+            "register": { "type": "boolean" },
+            "instrumentation": { "type": "boolean" }
+          }
+        },
+        "prominence": { "oneOf": [{ "type": "number" }, { "$ref": "#/$defs/envelope" }] },
+        "register": { "type": "object" },
+        "instrumentation": { "type": "object" },
+        "articulation": { "type": "object" },
+        "mix": { "type": "object" },
+        "emotionalIntent": { "$ref": "#/$defs/emotionalIntent" },
+        "freeTextIntent": { "type": "string" },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    }
+  }
+}

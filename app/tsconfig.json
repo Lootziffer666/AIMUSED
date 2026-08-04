@@ -11,7 +11,9 @@
     ],
     "sourceMap": true,
     "target": "esnext",
-    "module": "es2015",
+    // Vite emits; esnext is what it actually produces, and it is what allows
+    // the lazy dynamic imports the tone map packages use.
+    "module": "esnext",
     "esModuleInterop": true,
     "jsx": "react-jsx",
     "jsxImportSource": "@emotion/react",
@@ -23,6 +25,11 @@
     "alwaysStrict": true,
     "useDefineForClassFields": true,
     "resolveJsonModule": true,
+    // Vite does the emitting; tsc only type-checks. This lets the app import
+    // packages whose sources use explicit .ts specifiers (tonemap-core runs
+    // its CLI through node --experimental-strip-types, which requires them).
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,

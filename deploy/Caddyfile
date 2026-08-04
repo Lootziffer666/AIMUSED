@@ -1,0 +1,41 @@
+# MUSE behind Caddy – the recommended way to self-host.
+#
+# Caddy is here for one reason: HTTPS. The jam room's camera, the microphone
+# and the camera sequencer only exist in a *secure context*, so a phone opening
+# MUSE at http://192.168.1.42:3000 gets no camera at all – not a permission
+# prompt, no error worth reading, just a missing API. HTTPS fixes that, and
+# Caddy obtains and renews the certificate on its own.
+#
+#   docker compose -f deploy/compose.yaml up -d
+#
+# Replace the site address below with your own name before starting.
+
+muse.example.com {
+	root * /srv
+	encode gzip zstd
+
+	# The SoundFont and the hashed asset bundles never change under their name
+	@immutable path /assets/* /soundfonts/*
+	header @immutable Cache-Control "public, max-age=31536000, immutable"
+
+	# The app shell must not be cached, or an update never arrives
+	@shell path / /index.html /edit.html /service-worker.js
+	header @shell Cache-Control "no-cache"
+
+	# MUSE is a single page app: unknown paths are its routes, not 404s
+	try_files {path} {path}.html /index.html
+	file_server
+}
+
+# --- Local network without a public domain -----------------------------------
+#
+# For a home server that is not reachable from the internet, Caddy can still
+# issue a certificate through its own local CA. Install the root certificate on
+# the phone once (Caddy prints where it lives) and camera and microphone work.
+#
+# 192.168.1.42.nip.io {
+# 	tls internal
+# 	root * /srv
+# 	try_files {path} {path}.html /index.html
+# 	file_server
+# }

@@ -61,10 +61,19 @@ Signal is a web-based music sequencer built with React and TypeScript, with cros
 - Arrange View - Multi-track timeline view
 - Tempo Graph - Tempo automation editing
 - Control Pane - Parameter automation (velocity, pan, etc.)
+- Pattern Editor (`/jam-grid`) - layered pattern canvas with free pattern
+  lengths, held notes and per-event bezier curves (see `docs/pattern-editor.md`)
+- Jam Room (`/jam`) - camera, voice, drum zones and hand tracking
 
 **Packages (`/packages`)**
 
 - `@signal-app/core` - Core sequencer entities and song/track/event model
+- `@signal-app/tonemap-core` - ToneMap IR, lossless MIDI event graph,
+  deterministic audio analysis (native WAV and FLAC decoders; MP3/Ogg Vorbis
+  behind the lazily loaded `@signal-app/tonemap-core/codecs` entry),
+  MIDI/audio alignment, motif graph, non-destructive orchestration plans,
+  patch ranking and an optional ONNX Runtime binding
+  (see `docs/tonemap/architecture.md`); no DOM, used by the Tone Map workspace
 - `@signal-app/player` - Audio playback engine with SoundFont synthesis
 - `dialog-hooks` - React hooks for modal dialogs
 
@@ -78,6 +87,8 @@ Signal is a web-based music sequencer built with React and TypeScript, with cros
 
 **Song Structure:**
 
+- `MusePattern` - Reusable pattern with independent instrument layers; kept in
+  `PatternStore` and mirrored into song tracks by `patternSongAdapter`
 - `Song` - Top-level container with tracks, tempo, time signatures
 - `Track` - Individual instrument track with MIDI events
 - `TrackEvent` - MIDI events (notes, control changes, program changes)

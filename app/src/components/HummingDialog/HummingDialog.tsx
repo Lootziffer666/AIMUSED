@@ -16,6 +16,10 @@ import { DEFAULT_TEMPO } from "../../Constants"
 import { useRootView } from "../../hooks/useRootView"
 import { useStores } from "../../hooks/useStores"
 import { noteNameWithOctString } from "../../helpers/noteNumberString"
+import {
+  checkMediaAvailability,
+  MediaUnavailableError,
+} from "../../helpers/secureContext"
 import { Localized, useLocalization } from "../../localize/useLocalization"
 import { applyHummingResultToSong } from "../../services/humming/hummingSongAdapter"
 import {
@@ -274,6 +278,10 @@ export const HummingDialog: FC = () => {
 
   const onClickRecord = useCallback(async () => {
     try {
+      const availability = checkMediaAvailability()
+      if (!availability.available) {
+        throw new MediaUnavailableError(availability.reason)
+      }
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
       })

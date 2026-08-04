@@ -27,6 +27,15 @@ const _ToolbarButton = styled.button`
     color: var(--color-on-surface);
     background: var(--color-theme);
   }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  &:disabled:hover {
+    background: var(--color-background-dark);
+  }
 `
 
 export const ToolbarButton = forwardRef<

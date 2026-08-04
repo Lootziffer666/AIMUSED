@@ -1,0 +1,38 @@
+# Self-hosted MUSE: build the static site, serve it over HTTPS.
+#
+#   docker compose -f deploy/compose.yaml up -d --build
+#
+# Set the site address in deploy/Caddyfile first. Everything MUSE needs is in
+# the image – the SoundFont and the fonts are bundled, so the server works
+# without an internet connection once the certificate exists.
+
+services:
+  build:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: builder
+    volumes:
+      - site:/out
+    command: sh -c "cp -r /code/dist/. /out/"
+
+  web:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      build:
+        condition: service_completed_successfully
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - site:/srv:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  site:
+  caddy-data:
+  caddy-config:

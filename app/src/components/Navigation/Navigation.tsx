@@ -1,6 +1,9 @@
 import styled from "@emotion/styled"
+import Camera from "mdi-react/CameraIcon"
+import ChartTimeline from "mdi-react/ChartTimelineVariantIcon"
 import Forum from "mdi-react/ForumIcon"
 import Help from "mdi-react/HelpCircleIcon"
+import Music from "mdi-react/MusicIcon"
 import Settings from "mdi-react/SettingsIcon"
 import { CSSProperties, FC, MouseEvent, useCallback } from "react"
 import { getPlatform, isRunningInElectron } from "../../helpers/platform"
@@ -22,6 +25,18 @@ const Container = styled.div`
   height: 3rem;
   flex-shrink: 0;
   -webkit-app-region: drag;
+
+  /* On a phone there is no room for every tab, so the bar scrolls instead of
+     hiding the ones at the end – Jam Room and Patterns are exactly the tabs
+     that were unreachable before. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
   padding: ${() => {
     if (isRunningInElectron()) {
       const platform = getPlatform()
@@ -38,7 +53,8 @@ const Container = styled.div`
 export const Tab = styled.div`
   display: flex;
   flex-direction: row;
-  align-items: center; 
+  align-items: center;
+  flex-shrink: 0;
   padding: 0.5rem 1rem;
   font-size: 0.75rem;
   border-top: solid 0.1rem transparent;
@@ -73,6 +89,12 @@ export const TabTitle = styled.span`
 
 const FlexibleSpacer = styled.div`
   flex-grow: 1;
+  flex-shrink: 0;
+
+  /* nothing to push apart once the bar scrolls */
+  @media (max-width: 850px) {
+    flex-grow: 0;
+  }
 `
 
 export const IconStyle: CSSProperties = {
@@ -105,6 +127,38 @@ export const Navigation: FC = () => {
     (e: MouseEvent) => {
       e.preventDefault()
       setPath("/tempo")
+    },
+    [setPath],
+  )
+
+  const onClickJamTab = useCallback(
+    (e: MouseEvent) => {
+      e.preventDefault()
+      setPath("/jam")
+    },
+    [setPath],
+  )
+
+  const onClickGridTab = useCallback(
+    (e: MouseEvent) => {
+      e.preventDefault()
+      setPath("/jam-grid")
+    },
+    [setPath],
+  )
+
+  const onClickToneMapTab = useCallback(
+    (e: MouseEvent) => {
+      e.preventDefault()
+      setPath("/tonemap")
+    },
+    [setPath],
+  )
+
+  const onClickScanTab = useCallback(
+    (e: MouseEvent) => {
+      e.preventDefault()
+      setPath("/jam-scan")
     },
     [setPath],
   )
@@ -183,6 +237,57 @@ export const Navigation: FC = () => {
           <TempoIcon style={IconStyle} viewBox="0 0 128 128" />
           <TabTitle>
             <Localized name="tempo" />
+          </TabTitle>
+        </Tab>
+      </Tooltip>
+
+      <Tooltip title={<Localized name="jam-room" />} delayDuration={500}>
+        <Tab
+          className={path === "/jam" ? "active" : undefined}
+          onMouseDown={onClickJamTab}
+        >
+          <Music style={IconStyle} />
+          <TabTitle>
+            <Localized name="jam-room" />
+          </TabTitle>
+        </Tab>
+      </Tooltip>
+
+      <Tooltip title={<Localized name="patterns" />} delayDuration={500}>
+        <Tab
+          className={path === "/jam-grid" ? "active" : undefined}
+          onMouseDown={onClickGridTab}
+        >
+          <PianoIcon style={IconStyle} viewBox="0 0 128 128" />
+          <TabTitle>
+            <Localized name="patterns" />
+          </TabTitle>
+        </Tab>
+      </Tooltip>
+
+      <Tooltip
+        title={<Localized name="camera-sequencer" />}
+        delayDuration={500}
+      >
+        <Tab
+          className={path === "/jam-scan" ? "active" : undefined}
+          onMouseDown={onClickScanTab}
+        >
+          <Camera style={IconStyle} />
+          <TabTitle>
+            <Localized name="camera-sequencer" />
+          </TabTitle>
+        </Tab>
+      </Tooltip>
+
+      <Tooltip title={<Localized name="tonemap-title" />} delayDuration={500}>
+        <Tab
+          className={path === "/tonemap" ? "active" : undefined}
+          onMouseDown={onClickToneMapTab}
+        >
+          <ChartTimeline style={IconStyle} />
+          <TabTitle>
+            <Localized name="tonemap-title" />
           </TabTitle>
         </Tab>
       </Tooltip>

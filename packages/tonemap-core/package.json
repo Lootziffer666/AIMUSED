@@ -1,0 +1,32 @@
+{
+  "name": "@signal-app/tonemap-core",
+  "version": "0.1.0",
+  "description": "MUSE ToneMap: versioned intermediate representation, lossless MIDI event graph, deterministic audio/symbolic analysis, alignment, orchestration planning and patch ranking",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "tonemap": "node --experimental-strip-types src/cli/main.ts"
+  },
+  "exports": {
+    ".": {
+      "default": "./src/index.ts",
+      "types": "./src/index.ts"
+    },
+    "./codecs": {
+      "default": "./src/audio/codecs.ts",
+      "types": "./src/audio/codecs.ts"
+    }
+  },
+  "devDependencies": {
+    "@breezystack/lamejs": "^1.2.7",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "midi-file": "^1.2.4"
+  },
+  "optionalDependencies": {
+    "@wasm-audio-decoders/ogg-vorbis": "^0.1.20",
+    "mpg123-decoder": "^1.0.3"
+  }
+}

@@ -6,6 +6,9 @@ import svgr from "vite-plugin-svgr"
 
 export default defineConfig(() => {
   return {
+    // Relative asset URLs, so a self-hosted build works at the domain root
+    // and under a sub path without being rebuilt.
+    base: "./",
     plugins: [
       checker({
         typescript: true,
