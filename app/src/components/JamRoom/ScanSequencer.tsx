@@ -253,7 +253,7 @@ export const ScanSequencer: FC = () => {
       streamRef.current?.getTracks().forEach((track) => track.stop())
       player.allSoundsOffChannel(0)
     }
-  }, [player])
+  }, [localized, player])
 
   const previewNote = useCallback(
     (noteNumber: number, velocity: number) => {
