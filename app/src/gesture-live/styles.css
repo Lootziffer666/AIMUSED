@@ -1,0 +1,536 @@
+/* GESTURE.LIVE — MUSE Hand-Tracking UI */
+.gesture-live {
+  --gl-border: rgba(255, 255, 255, 0.12);
+  --gl-accent: #ff6b4a;
+  --gl-accent-dim: rgba(255, 107, 74, 0.25);
+  --gl-text-dim: rgba(255, 255, 255, 0.45);
+  --gl-grid: rgba(255, 255, 255, 0.06);
+  --gl-bg: #0a0a0f;
+
+  font-family: var(--kimi-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+  width: 100%;
+  min-height: 520px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--gl-bg);
+  color: #e8e8e8;
+  box-sizing: border-box;
+}
+
+.gesture-live * { box-sizing: border-box; }
+
+/* ─── Top Bar ──────────────────────────────────────────────────── */
+.gl-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--gl-border);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gl-topbar-left {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.gl-topbar-right {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.gl-logo {
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+}
+
+.gl-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--gl-accent);
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.gl-bpm-display {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* ─── Meter ────────────────────────────────────────────────────── */
+.gl-meter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.gl-meter-bar {
+  width: 3px;
+  height: 10px;
+  background: var(--gl-text-dim);
+  border-radius: 1px;
+  transition: background 0.15s;
+}
+
+.gl-meter-bar.active {
+  background: var(--gl-accent);
+}
+
+/* ─── Main Grid ────────────────────────────────────────────────── */
+.gl-main {
+  display: grid;
+  grid-template-columns: 220px 1fr 220px;
+  height: calc(100% - 28px);
+  min-height: 492px;
+}
+
+/* ─── Panels ───────────────────────────────────────────────────── */
+.gl-panel {
+  border-right: 1px solid var(--gl-border);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.gl-panel:last-child {
+  border-right: none;
+}
+
+.gl-panel-title {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gl-text-dim);
+  margin-bottom: 4px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.gl-panel-sub {
+  font-size: 9px;
+  color: var(--gl-text-dim);
+}
+
+/* ─── Grade List ───────────────────────────────────────────────── */
+.gl-grade-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.gl-grade-row {
+  display: grid;
+  grid-template-columns: 22px 28px 1fr 40px;
+  align-items: center;
+  padding: 3px 5px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.1s;
+  font-size: 11px;
+  user-select: none;
+}
+
+.gl-grade-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.gl-grade-row.active {
+  background: var(--gl-accent-dim);
+}
+
+.gl-grade-row.active .gl-grade-chord {
+  color: var(--gl-accent);
+}
+
+.gl-grade-num {
+  color: var(--gl-text-dim);
+  font-size: 10px;
+}
+
+.gl-grade-pose {
+  display: flex;
+  gap: 1px;
+}
+
+.gl-pose-bar {
+  width: 3px;
+  height: 10px;
+  background: var(--gl-text-dim);
+  border-radius: 1px;
+}
+
+.gl-pose-bar.lit {
+  background: var(--gl-accent);
+}
+
+.gl-grade-chord {
+  font-weight: 500;
+}
+
+/* ─── Controls ─────────────────────────────────────────────────── */
+.gl-control-group {
+  border: 1px solid var(--gl-border);
+  border-radius: 6px;
+  padding: 6px;
+}
+
+.gl-control-label {
+  font-size: 9px;
+  color: var(--gl-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 4px;
+}
+
+.gl-control-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.gl-btn {
+  flex: 1;
+  padding: 4px 6px;
+  border: 1px solid var(--gl-border);
+  background: transparent;
+  color: var(--gl-text-dim);
+  border-radius: 4px;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.gl-btn:hover {
+  border-color: var(--gl-accent);
+  color: #fff;
+}
+
+.gl-btn.active {
+  background: var(--gl-accent-dim);
+  border-color: var(--gl-accent);
+  color: var(--gl-accent);
+}
+
+.gl-slider-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.gl-slider-label {
+  font-size: 9px;
+  color: var(--gl-text-dim);
+  width: 50px;
+  flex-shrink: 0;
+}
+
+.gl-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  background: var(--gl-border);
+  border-radius: 2px;
+  outline: none;
+}
+
+.gl-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--gl-accent);
+  cursor: pointer;
+}
+
+.gl-slider::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--gl-accent);
+  cursor: pointer;
+  border: none;
+}
+
+/* ─── Center ───────────────────────────────────────────────────── */
+.gl-center {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.gl-camera-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(10, 10, 15, 0.3) 0%, rgba(10, 10, 15, 0.7) 100%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 29px,
+      rgba(255, 255, 255, 0.03) 30px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 29px,
+      rgba(255, 255, 255, 0.03) 30px
+    );
+}
+
+.gl-grid-overlay {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+.gl-wave-grid {
+  position: absolute;
+  bottom: 60px;
+  left: 10%;
+  right: 10%;
+  height: 120px;
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.gl-wave-grid svg {
+  width: 100%;
+  height: 100%;
+}
+
+.gl-chord-big {
+  position: relative;
+  z-index: 2;
+  font-size: 42px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-align: center;
+  margin-top: -40px;
+  text-shadow: 0 0 40px rgba(255, 107, 74, 0.3);
+  transition: all 0.2s;
+}
+
+.gl-chord-notes {
+  position: relative;
+  z-index: 2;
+  font-size: 11px;
+  color: var(--gl-text-dim);
+  letter-spacing: 0.15em;
+  margin-top: 6px;
+}
+
+.gl-hand-left,
+.gl-hand-right {
+  position: absolute;
+  z-index: 3;
+  width: 90px;
+  height: 110px;
+  pointer-events: none;
+}
+
+.gl-hand-left {
+  left: 18%;
+  bottom: 22%;
+}
+
+.gl-hand-right {
+  right: 18%;
+  bottom: 22%;
+}
+
+.gl-hand-svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ─── Bottom Bar ───────────────────────────────────────────────── */
+.gl-bottom-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+  border-top: 1px solid var(--gl-border);
+  background: rgba(10, 10, 15, 0.85);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 16px;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gl-text-dim);
+  z-index: 5;
+}
+
+.gl-bottom-param {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.gl-scope {
+  flex: 1;
+  height: 30px;
+  position: relative;
+  min-width: 60px;
+}
+
+.gl-scope svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ─── Right Module ─────────────────────────────────────────────── */
+.gl-right-module {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gl-step-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.gl-step-label {
+  width: 55px;
+  font-size: 9px;
+  color: var(--gl-text-dim);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.gl-steps {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+}
+
+.gl-step {
+  flex: 1;
+  height: 16px;
+  border: 1px solid var(--gl-border);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.1s;
+  min-width: 8px;
+}
+
+.gl-step:hover {
+  border-color: var(--gl-accent);
+}
+
+.gl-step.on {
+  background: var(--gl-accent);
+  border-color: var(--gl-accent);
+}
+
+.gl-step.current {
+  box-shadow: 0 0 4px var(--gl-accent);
+}
+
+.gl-melody-voice {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--gl-border);
+  cursor: pointer;
+}
+
+.gl-melody-voice .active {
+  color: var(--gl-accent);
+}
+
+.gl-fx-btn {
+  padding: 5px 8px;
+  border: 1px solid var(--gl-border);
+  border-radius: 4px;
+  font-size: 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+  font-family: inherit;
+  background: transparent;
+  color: inherit;
+}
+
+.gl-fx-btn:hover,
+.gl-fx-btn.active {
+  border-color: var(--gl-accent);
+  background: var(--gl-accent-dim);
+}
+
+.gl-mode-sel {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.gl-mode-btn {
+  flex: 1;
+  padding: 4px;
+  border: 1px solid var(--gl-border);
+  background: transparent;
+  color: var(--gl-text-dim);
+  border-radius: 4px;
+  font-size: 9px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.gl-mode-btn.active {
+  border-color: var(--gl-accent);
+  color: var(--gl-accent);
+  background: var(--gl-accent-dim);
+}
+
+/* ─── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .gl-main {
+    grid-template-columns: 180px 1fr 180px;
+  }
+  .gl-chord-big {
+    font-size: 32px;
+  }
+}
+
+@media (max-width: 700px) {
+  .gl-main {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 300px auto;
+  }
+  .gl-panel {
+    border-right: none;
+    border-bottom: 1px solid var(--gl-border);
+  }
+  .gl-hand-left,
+  .gl-hand-right {
+    display: none;
+  }
+}
