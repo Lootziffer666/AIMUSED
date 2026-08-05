@@ -2,8 +2,8 @@
   "theme_color": "#4c41cc",
   "background_color": "#272a36",
   "display": "standalone",
-  "scope": "./",
-  "start_url": "./",
+  "scope": "/edit",
+  "start_url": "/edit",
   "name": "MUSE",
   "short_name": "MUSE",
   "icons": [
